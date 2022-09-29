@@ -1,10 +1,12 @@
 # Evolutionary AI project
 
-School project in relation to Oslomet ACIT4610.
+School project for Oslomet ACIT4610.
 
 Control of cart pole using an evolutionary algorithm.
 
-Links to libraries:
+Tested on Ubuntu 20.04 using python 3.8.10
+
+## Links to libraries:
 
 Gym: https://github.com/openai/gym
 
