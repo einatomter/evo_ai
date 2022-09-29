@@ -36,19 +36,3 @@ for _ in range(1000):
     if terminated or truncated:
         observation, info = env.reset()
 env.close()
-
-
-# ruleset is an array of possible rules
-# initial_values are the binary configuration of the observations
-def cellular_automaton(ruleset, initial_values):
-    '''
-        000 = 0
-        001 = 1
-    '''
-
-    # range is size of cellular automaton
-    for i in range(6):
-        substr = [initial_values[i-1], initial_values[i], initial_values[i+1]]
-        print(substr)
-
-    # pass
