@@ -21,6 +21,7 @@ def cellular_automaton(ruleset, initial_values):
 
     print(f'initial values:\t{initial_values}')
 
+    # TODO: range based on size of initial_values
     # range is size of cellular automaton
     for i in range(6):
         substr = ""
