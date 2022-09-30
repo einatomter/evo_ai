@@ -6,12 +6,12 @@ from evo_ai import *
 
 cfg_radius = 1 # neighbours = radius/2
 
+# first initialization
 env = gym.make("CartPole-v1", render_mode="human")
+#env = gym.make("CartPole-v1")
+
 observation, info = env.reset(seed=42)
-
-# TODO: separate initialize function?
-
-#action = 1 we shouldn't pass this as the first step, right?
+#action = 1 we shouldn't pass this as the first step, right? I just put env.step() bit lower when an action has been found by CA
 time = 0
 dec_angle = 0
 ruleset = gen_rrs(cfg_radius)
@@ -25,21 +25,22 @@ for _ in range(1000):
     bin_angle = format(24 + round(dec_angle * 180/np.pi), "b") # negative angles are 0-23, positive angles are 24-48
     bin_angle = bin_angle.zfill(6)
     
-    action = ca_output(cellular_automaton(ruleset, cfg_radius, bin_angle))
-    
+    action = CA_majority(CA_propagate(ruleset, cfg_radius, bin_angle))
     observation, reward, terminated, truncated, info = env.step(action)
+    time += reward
     
     # print(observation)
     # print(reward)
-
-    time += reward
     
-    if terminated or truncated:
+    if terminated:
         if time > 30:
             print(f'ruleset:\t{ruleset}')
             print(f'time: {time}')
+            fitness_track(ruleset, time)
             
         ruleset = gen_rrs(cfg_radius)
         time = 0
         observation, info = env.reset()
+
+print_fitness()
 env.close()

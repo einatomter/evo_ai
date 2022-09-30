@@ -6,9 +6,9 @@ import random
 
 # TODO: Rename variables to match terminology from lectures
 
-
-
-def cellular_automaton(ruleset: str, radius, initial_values: str):
+fitness_list = []
+    
+def CA_propagate(ruleset: str, radius: int, initial_values: str) -> str:
     '''
         Performs update step
 
@@ -25,32 +25,26 @@ def cellular_automaton(ruleset: str, radius, initial_values: str):
     CA_length = len(initial_values)
     new_values = ""
 
-
-    print(f'initial values:\t{initial_values}')
-    print(f'ruleset:\t{ruleset}')
+    #print(f'initial values:\t{initial_values}')
+    #print(f'ruleset:\t{ruleset}')
     
-
-    # TODO: range based on size of initial_values
-    # range is size of cellular automaton
+    # range is size of cellular automaton/initial value
     for i in range(CA_length):
         substr = ""
         for cell in range(-radius, radius+1):
             substr += initial_values[(i + cell) % CA_length]
 
         # convert substr = decimal
-        #print(substr)
         substr_10 = int(substr, 2)
-        #print(substr_10)
         new_values += ruleset[substr_10]
-
-        #print(substr + ", " + ruleset[substr_10])
     # /loop
 
-    print(f'new values:\t{new_values}')
+    #print(f'new values:\t{new_values}')
     
     return new_values
 
-def ca_output(bitstring: str) -> bool:
+
+def CA_majority(bitstring: str) -> bool:
     '''
         Determines action of the cart.
         Currently decides based on majority vote.
@@ -67,10 +61,7 @@ def ca_output(bitstring: str) -> bool:
         return 0
 
 
-
-# Generate random ruleset
-# returns bitstring
-def gen_rrs(radius):
+def gen_rrs(radius: int) -> str:
     ''' 
         Generates a random ruleset based on the amount of neighbours.
         
@@ -87,8 +78,22 @@ def gen_rrs(radius):
     return rrs_bit
 
 
-def fitness_check():
-    pass
+def fitness_track(ruleset: str, total_time: float):
+
+    if fitness_list:
+        if total_time > fitness_list[0][1]:
+            fitness_list.insert(0, [ruleset, total_time])
+    else:
+        fitness_list.append([ruleset, total_time])
+
+    # alternative to do sorting, but I guess only if we need to sort once. it will sort by time
+    #fitness_list.append([ruleset, total_time])
+    #fitness_list = sorted(fitness_list, key=lambda x: x[1])
+    
+
+def print_fitness():
+    print(f'fitness list: {fitness_list}')
+    
 
 
 
