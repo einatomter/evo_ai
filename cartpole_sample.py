@@ -4,29 +4,31 @@ import gym
 import numpy as np
 from evo_ai import *
 
+cfg_radius = 1 # neighbours = radius/2
+
 env = gym.make("CartPole-v1", render_mode="human")
 observation, info = env.reset(seed=42)
 
-angle = 0
-action = 1
+# TODO: separate initialize function?
 
+#action = 1 we shouldn't pass this as the first step, right?
 time = 0
+dec_angle = 0
+ruleset = gen_rrs(cfg_radius)
 
-ruleset = generate_rrs(3)
 print(f'ruleset:\t{ruleset}')
 
 for _ in range(1000):
     # action = env.action_space.sample()
+    
+    dec_angle = observation[2]
+    bin_angle = format(24 + round(dec_angle * 180/np.pi), "b") # negative angles are 0-23, positive angles are 24-48
+    bin_angle = bin_angle.zfill(6)
+    
+    action = ca_output(cellular_automaton(ruleset, cfg_radius, bin_angle))
+    
     observation, reward, terminated, truncated, info = env.step(action)
     
-    angle = observation[2]
-
-    bin_angle = format(24 + round(angle * 180/np.pi), "b")
-
-    bin_angle = bin_angle.zfill(6)
-
-    action = ca_output(cellular_automaton(ruleset, bin_angle))
-
     # print(observation)
     # print(reward)
 
@@ -37,8 +39,7 @@ for _ in range(1000):
             print(f'ruleset:\t{ruleset}')
             print(f'time: {time}')
             
-        ruleset = generate_rrs(3)
-        
+        ruleset = gen_rrs(cfg_radius)
         time = 0
         observation, info = env.reset()
 env.close()

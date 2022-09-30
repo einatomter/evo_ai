@@ -16,10 +16,13 @@ def cellular_automaton(ruleset: str, radius, initial_values: str):
 
         Initial values is binary string from observations
 
+        Returns: new_values
+
         TODO: Add parameter for substr size (should be odd value?)
     '''
 
     # variable declaration
+    CA_length = len(initial_values)
     new_values = ""
 
 
@@ -29,15 +32,18 @@ def cellular_automaton(ruleset: str, radius, initial_values: str):
 
     # TODO: range based on size of initial_values
     # range is size of cellular automaton
-    for i in range(6):
+    for i in range(CA_length):
         substr = ""
-        for cell in range(radius, (radius+1)):
-            substr += initial_values[(i + cell) % 6]
+        for cell in range(-radius, radius+1):
+            substr += initial_values[(i + cell) % CA_length]
 
         # convert substr = decimal
+        #print(substr)
         substr_10 = int(substr, 2)
-
+        #print(substr_10)
         new_values += ruleset[substr_10]
+
+        #print(substr + ", " + ruleset[substr_10])
     # /loop
 
     print(f'new values:\t{new_values}')
@@ -64,27 +70,33 @@ def ca_output(bitstring: str) -> bool:
 
 # Generate random ruleset
 # returns bitstring
-def generate_rrs(subst_size):
+def gen_rrs(radius):
     ''' 
         Generates a random ruleset based on the amount of neighbours.
         
         Input: size of substring (int)
         Returns: random bitsting within range (str)
     '''
-
-    max_substrings = 2 ** subst_size
-    max_rules = (2 ** max_substrings) - 1 # max 255
+    subst_size = (radius * 2) + 1
+    max_substr = 2 ** subst_size
+    max_rules = (2 ** max_substr) - 1 # max 255
     
     rrs_dec = random.randrange(0, max_rules) # 140   10001100
-    rrs_bit = format(rrs_dec, "b").zfill(max_substrings)
+    rrs_bit = format(rrs_dec, "b").zfill(max_substr)
 
     return rrs_bit
 
 
-def main():
-    cellular_automaton(generate_rrs(5), 2, "101110")
+def fitness_check():
+    pass
 
 
 
-if __name__ == "__main__":
-    main()
+
+#def main():
+    #cellular_automaton(gen_rrs(5), 2, "101110")
+
+
+
+#if __name__ == "__main__":
+    #main()
