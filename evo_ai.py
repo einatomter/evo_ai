@@ -7,23 +7,32 @@ import random
 
 # TODO: Rename variables to match terminology from lectures
 
+# phenotype: ruleset
+# genotype: 100101101101
 
+# max population
+POPULATION = 300
 
-
-
-def CA_initialize(): #or CA_run?
+def CA_initialize(generate_random: bool = False): #or CA_run?
 
     population = []
     time = 0
     dec_angle = 0
     i = 0
+    batch_no = 0
 
-    #env = gym.make("CartPole-v1", render_mode="human")
+    # env = gym.make("CartPole-v1", render_mode="human")
     env = gym.make("CartPole-v1")
     observation, info = env.reset(seed=42)
     ruleset = gen_rrs(cfg_radius)
 
-    for _ in range(10000):
+    if generate_random:
+        for i in range(POPULATION):
+            population.append([gen_rrs(cfg_radius), 0])
+
+
+    #for _ in range(10000):
+    while True:
         
         dec_angle = observation[2]
         bin_angle = format(24 + round(dec_angle * 180/np.pi), "b") # negative angles are 0-23, positive angles are 24-48
@@ -33,10 +42,10 @@ def CA_initialize(): #or CA_run?
         time += reward
 
         if terminated:
-            if len(population) < 5:
+            if len(population) < POPULATION:
                 if time > 30:
-                    print(f'ruleset:\t{ruleset} \ttime: {time}')
-                    #population[ruleset] = time
+                    # print(f'ruleset:\t{ruleset} \ttime: {time}')
+                    # population[ruleset] = time
                     population.append([ruleset, time])
 
                 ruleset = gen_rrs(cfg_radius)
@@ -46,11 +55,20 @@ def CA_initialize(): #or CA_run?
 
                 # step 1: evolve rules
                 if i == len(population):
-                    print()
-                    for rule in population:
+                    # print()
+                    # for rule in population:
                         # print(f'ruleset:\t{rule}')
+                    batch_no += 1
+                    
+                    # print(f'\nbatch: {batch_no}')
+                    # for i in range(len(population)):
+                    #     print(population[i])
 
-                    population = evolve(population)
+                    fitness = max(population, key=lambda x: x[1])
+                    
+                    print(f'batch:\t{batch_no} \tfitness:\t{fitness[1]} \tgenome:\t{fitness[0]}')
+                    
+                    population = evolve(population, 0.8)
                     i = 0
                     ruleset = population[i][0]
                 # step 2: loop through rules -> save new fitness score
@@ -60,13 +78,13 @@ def CA_initialize(): #or CA_run?
                         ruleset = population[i][0]
                     i += 1
 
+            
 
             time = 0
             observation, info = env.reset()
 
     # print(population)
     env.close()
-    
 
 
 
@@ -145,7 +163,7 @@ def gen_rrs(radius: int) -> str:
 
 
 # TODO: terminology
-def evolve(population):
+def evolve(population: list, p):
     '''
         Performs evolution (tm)
 
@@ -153,20 +171,135 @@ def evolve(population):
         Returns: list containing new population
     '''
 
+    population_new = []
+
     # print(f'old population: {population}')
 
-    
+    # 1. choose individuals
 
-    population_new = population
+    chosen_ones = tournament(population, 100, 25)
+
+    # 2. reproduction
+    while(len(population_new) < len(population)):
+        #print(f"population_new: {len(population_new)} \t population: {len(population)}")       
+        if (random.random() < p):
+            choice = random.choice(chosen_ones)
+            population_new.append([mutation(choice[0], 0.05), 0])
+            #print("MUTATION")
+
+        else:
+            choices = random.sample(chosen_ones, 2)
+            #print(f"choices: {choices}")
+            temp = uniform_crossover(choices[0][0], choices[1][0], 0.5)
+            population_new.append([temp[0], 0])
+            # population_new.append([temp[1], 0])
+            #print("CROSSOVER")
 
 
-
-    # print(f'new population: {population_new}')
+    # print(f'new population:')
+    # for i in population_new:
+    #     print(i)
 
     return population_new
 
 
 
+
+
+def truncation(population: list, n: int) -> list:
+    '''
+        Returns list of n best individuals
+    '''
+    chosen = []
+
+    population = sorted(population, key=lambda x: x[1], reverse=1)
+    
+    for i in range (n):
+        chosen.append(population[i])
+
+    return chosen
+
+
+
+def uniform(population: list, n: int) -> list:
+    '''
+        Returns a randomly picked individual
+    '''
+    
+    individual = random.sample(population, n)
+
+    return individual
+
+def tournament(population: list, n: int, m: int) -> list:
+    '''
+        Returns m amount of best individuals from n size list of randomly picked individuals
+    '''
+
+    n_population = uniform(population, n)
+    
+    chosen_ones = truncation(n_population, m)
+
+    return chosen_ones
+
+
+def mutation(parent: str, p: int) -> str:
+    '''
+        Performs mutation
+    '''
+    
+    offspring = ""
+
+    for bit in parent:
+        if random.randrange(10000)/100 <= p:
+            offspring += (bit_flip(bit))
+        else:
+            offspring += (bit)
+
+    return offspring
+
+def n_point_crossover(parent1: str, parent2: str, cut_points: list) -> str:
+    '''
+        Performs nonvariable length crossover at specified cut points
+    '''
+
+    offspring = ""
+    switch = False
+
+    for i in range(len(parent1)):
+        if i in cut_points:
+            switch = not switch
+        if not switch:
+            offspring += parent1[i]
+        else:
+            offspring += parent2[i]
+
+    # print(offspring)
+    return offspring
+
+
+
+def uniform_crossover(parent1: str, parent2: str, p: int) -> str:
+    '''
+        Performs a crossover with cut points placed  at each index with probability p  
+    '''
+
+    offspring1 = ""
+    offspring2 = ""
+
+    for i in range(len(parent1)):
+        if random.random() < p:
+            offspring1 += parent1[i]
+            offspring2 += parent2[i]
+        else:
+            offspring1 += parent2[i]
+            offspring2 += parent1[i]
+    
+    return offspring1, offspring2
+
+
+def bit_flip(ch: str) -> str:
+    bit = str(1 - int(ch))
+    return bit
 
 # def fitness_track(ruleset: str, total_time: float, population: dict):
 
@@ -187,13 +320,13 @@ def evolve(population):
 
 
 
-cfg_radius = 2 # neighbours = radius/2
+cfg_radius = 4 # neighbours = radius/2
 
 
 
 def main():
     # cellular_automaton(gen_rrs(5), 2, "101110")
-    CA_initialize()
+    CA_initialize(True)
     
 
 if __name__ == "__main__":
