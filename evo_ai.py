@@ -1,13 +1,75 @@
 #!/usr/bin/env python3
 
+from ctypes import sizeof
 import gym
 import numpy as np
 import random
 
 # TODO: Rename variables to match terminology from lectures
 
-fitness_list = []
+
+
+
+
+def CA_initialize(): #or CA_run?
+
+    population = []
+    time = 0
+    dec_angle = 0
+    i = 0
+
+    #env = gym.make("CartPole-v1", render_mode="human")
+    env = gym.make("CartPole-v1")
+    observation, info = env.reset(seed=42)
+    ruleset = gen_rrs(cfg_radius)
+
+    for _ in range(10000):
+        
+        dec_angle = observation[2]
+        bin_angle = format(24 + round(dec_angle * 180/np.pi), "b") # negative angles are 0-23, positive angles are 24-48
+        bin_angle = bin_angle.zfill(6)
+        action = CA_majority(CA_propagate(ruleset, cfg_radius, bin_angle))
+        observation, reward, terminated, truncated, info = env.step(action)
+        time += reward
+
+        if terminated:
+            if len(population) < 5:
+                if time > 30:
+                    print(f'ruleset:\t{ruleset} \ttime: {time}')
+                    #population[ruleset] = time
+                    population.append([ruleset, time])
+
+                ruleset = gen_rrs(cfg_radius)
+
+            else:
+                # perform evolution
+
+                # step 1: evolve rules
+                if i == len(population):
+                    print()
+                    for rule in population:
+                        # print(f'ruleset:\t{rule}')
+
+                    population = evolve(population)
+                    i = 0
+                    ruleset = population[i][0]
+                # step 2: loop through rules -> save new fitness score
+                else:
+                    population[i][1] = time
+                    if i != len(population):
+                        ruleset = population[i][0]
+                    i += 1
+
+
+            time = 0
+            observation, info = env.reset()
+
+    # print(population)
+    env.close()
     
+
+
+
 def CA_propagate(ruleset: str, radius: int, initial_values: str) -> str:
     '''
         Performs update step
@@ -17,8 +79,6 @@ def CA_propagate(ruleset: str, radius: int, initial_values: str) -> str:
         Initial values is binary string from observations
 
         Returns: new_values
-
-        TODO: Add parameter for substr size (should be odd value?)
     '''
 
     # variable declaration
@@ -44,12 +104,14 @@ def CA_propagate(ruleset: str, radius: int, initial_values: str) -> str:
     return new_values
 
 
+
+
 def CA_majority(bitstring: str) -> bool:
     '''
         Determines action of the cart.
         Currently decides based on majority vote.
 
-        0 = left, 1 = right
+        Returns: 0 (left), 1 (right)
     '''
     
     ones = bitstring.count('1')
@@ -59,6 +121,8 @@ def CA_majority(bitstring: str) -> bool:
         return 1
     else:
         return 0
+
+
 
 
 def gen_rrs(radius: int) -> str:
@@ -78,30 +142,59 @@ def gen_rrs(radius: int) -> str:
     return rrs_bit
 
 
-def fitness_track(ruleset: str, total_time: float):
 
-    if fitness_list:
-        if total_time > fitness_list[0][1]:
-            fitness_list.insert(0, [ruleset, total_time])
-    else:
-        fitness_list.append([ruleset, total_time])
 
-    # alternative to do sorting, but I guess only if we need to sort once. it will sort by time
-    #fitness_list.append([ruleset, total_time])
-    #fitness_list = sorted(fitness_list, key=lambda x: x[1])
+# TODO: terminology
+def evolve(population):
+    '''
+        Performs evolution (tm)
+
+        Input: list containing population of genomes (rules)
+        Returns: list containing new population
+    '''
+
+    # print(f'old population: {population}')
+
     
 
-def print_fitness():
-    print(f'fitness list: {fitness_list}')
+    population_new = population
+
+
+
+    # print(f'new population: {population_new}')
+
+    return population_new
+
+
+
+
+# def fitness_track(ruleset: str, total_time: float, population: dict):
+
+#     # if population:
+#     #     if total_time > population[0][1]:
+#     #         population.insert(0, [ruleset, total_time])
+#     # else:
+#     #     population.append([ruleset, total_time])
+
+#     # alternative to do sorting, but I guess only if we need to sort once. it will sort by time
+#     population.append([ruleset, total_time])
+#     population = sorted(population, key=lambda x: x[1])
+
+# ------------------------------------
+# main
+# ------------------------------------
+
+
+
+
+cfg_radius = 2 # neighbours = radius/2
+
+
+
+def main():
+    # cellular_automaton(gen_rrs(5), 2, "101110")
+    CA_initialize()
     
 
-
-
-
-#def main():
-    #cellular_automaton(gen_rrs(5), 2, "101110")
-
-
-
-#if __name__ == "__main__":
-    #main()
+if __name__ == "__main__":
+    main()
