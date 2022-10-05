@@ -3,6 +3,7 @@
 from ctypes import sizeof
 import gym
 import numpy as np
+import pandas as pd
 import random
 
 # TODO: Rename variables to match terminology from lectures
@@ -11,7 +12,7 @@ import random
 # genotype: 100101101101
 
 # max population
-POPULATION = 300
+POPULATION = 100
 
 def CA_initialize(generate_random: bool = False): #or CA_run?
 
@@ -20,6 +21,8 @@ def CA_initialize(generate_random: bool = False): #or CA_run?
     dec_angle = 0
     i = 0
     batch_no = 0
+    tests = 4
+    j = 0
 
     # env = gym.make("CartPole-v1", render_mode="human")
     env = gym.make("CartPole-v1")
@@ -35,15 +38,23 @@ def CA_initialize(generate_random: bool = False): #or CA_run?
     while True:
         
         dec_angle = observation[2]
-        bin_angle = format(24 + round(dec_angle * 180/np.pi), "b") # negative angles are 0-23, positive angles are 24-48
-        bin_angle = bin_angle.zfill(6)
-        action = CA_majority(CA_propagate(ruleset, cfg_radius, bin_angle))
+        bin_angle = format(12 * 32 + round(dec_angle * 180/np.pi * 32), "b") # negative angles are 0-23, positive angles are 24-48
+        bin_angle = bin_angle.zfill(10)
+        # print(bin_angle)
+
+        dec_velocity = observation[1]
+        bin_velocity = format(round((2 + dec_velocity) * 100), "b") # adding offset of 2 to avoid negative values
+        bin_velocity = bin_angle.zfill(10)
+
+        bin_observations = bin_angle + bin_velocity
+        
+        action = CA_majority(CA_propagate(ruleset, cfg_radius, bin_velocity))
         observation, reward, terminated, truncated, info = env.step(action)
         time += reward
 
-        if terminated:
+        if terminated or truncated:
             if len(population) < POPULATION:
-                if time > 30:
+                if time > 50:
                     # print(f'ruleset:\t{ruleset} \ttime: {time}')
                     # population[ruleset] = time
                     population.append([ruleset, time])
@@ -58,22 +69,41 @@ def CA_initialize(generate_random: bool = False): #or CA_run?
                     # print()
                     # for rule in population:
                         # print(f'ruleset:\t{rule}')
-                    batch_no += 1
                     
                     # print(f'\nbatch: {batch_no}')
                     # for i in range(len(population)):
                     #     print(population[i])
 
-                    fitness = max(population, key=lambda x: x[1])
-                    
-                    print(f'batch:\t{batch_no} \tfitness:\t{fitness[1]} \tgenome:\t{fitness[0]}')
-                    
-                    population = evolve(population, 0.8)
+                    # if max number of tries reached, evolve population
+                    if j == tests:
+                        # reset tries
+                        j = 0
+                        fitness_ave = 0
+
+                        # calculate average fitness score
+                        for individual in population:
+                            individual[1] /= tests
+                            fitness_ave += individual[1]
+
+
+                        batch_no += 1
+                        fitness = max(population, key=lambda x: x[1])
+                        fitness_ave /= len(population)
+
+                        print(f'batch:\t{batch_no} \tfitness max:\t{fitness[1]:.2f} \tfitness ave:\t{fitness_ave:.2f}')
+                        #  \tgenome:\t{fitness[0]}
+                        population = evolve(population, 0.8)
+
+                    # else continue testing    
+                    else:
+                        j += 1
+
                     i = 0
                     ruleset = population[i][0]
+
                 # step 2: loop through rules -> save new fitness score
                 else:
-                    population[i][1] = time
+                    population[i][1] += time
                     if i != len(population):
                         ruleset = population[i][0]
                     i += 1
@@ -177,23 +207,20 @@ def evolve(population: list, p):
 
     # 1. choose individuals
 
-    chosen_ones = tournament(population, 100, 25)
+    chosen_ones = tournament(population, POPULATION, 10)
 
     # 2. reproduction
     while(len(population_new) < len(population)):
         #print(f"population_new: {len(population_new)} \t population: {len(population)}")       
-        if (random.random() < p):
-            choice = random.choice(chosen_ones)
-            population_new.append([mutation(choice[0], 0.05), 0])
-            #print("MUTATION")
 
-        else:
-            choices = random.sample(chosen_ones, 2)
-            #print(f"choices: {choices}")
-            temp = uniform_crossover(choices[0][0], choices[1][0], 0.5)
-            population_new.append([temp[0], 0])
-            # population_new.append([temp[1], 0])
-            #print("CROSSOVER")
+        # choices = random.sample(chosen_ones, 2)
+        choice1 = random.choice(chosen_ones)
+        choice2 = random.choice(chosen_ones)
+        #print(f"choices: {choices}")
+        temp = n_point_crossover(choice1[0], choice2[0], [round(len(choice1[0])/2)])
+        temp = mutation(temp, 0.05)
+        population_new.append([temp, 0])
+
 
 
     # print(f'new population:')
@@ -320,13 +347,13 @@ def bit_flip(ch: str) -> str:
 
 
 
-cfg_radius = 4 # neighbours = radius/2
+cfg_radius = 4 # neighbours = radius*2
 
 
 
 def main():
     # cellular_automaton(gen_rrs(5), 2, "101110")
-    CA_initialize(True)
+    CA_initialize(False)
     
 
 if __name__ == "__main__":
