@@ -1,3 +1,6 @@
+import numpy as np
+
+
 test_list = [['a', 7],
              ['b', 1],
              ['c', 8],
@@ -66,13 +69,71 @@ def n_point_crossover2(parent1: str, parent2: str, cut_points: list) -> str:
     print(offspring)
     return offspring
 
+def CA_propagate(ruleset: str, radius: int, initial_values: str) -> str:
+    '''
+        Performs update step
+
+        Ruleset is an array of possible rules
+
+        Initial values is binary string from observations
+
+        Returns: 
+            new_values
+    '''
+
+    # variable declaration
+    CA_length = len(initial_values)
+    current_values = initial_values
+
+    print(initial_values)
+
+    #print(f'initial values:\t{initial_values}')
+    #print(f'ruleset:\t{ruleset}')
+    
+    # range is size of cellular automaton/initial value
+    for _ in range(CA_length):
+        new_values = ""
+        for j in range(CA_length):
+            substr = ""
+            for cell in range(-radius, radius+1):
+                substr += current_values[(j + cell) % CA_length]
+
+            # convert substr = decimal
+            substr_10 = int(substr, 2)
+            new_values += ruleset[substr_10]
+        # /loop through CA row
+        print(new_values)
+        current_values = new_values
+    # /loop through new CA
+
+    #print(f'new values:\t{new_values}')
+    
+    return new_values
 
 
-result = truncation(test_list, 2)
+# ca = CA_propagate("01101110", 1, "00111101101010")
+# print()
+# print(ca)
 
-print(result)
+dec_angle = 0.42
 
-print(bit_flip("1"))
-print(type(bit_flip("0")))
+min_angle = -0.42
+max_angle = 0.42
+resolution = 10
 
-print(n_point_crossover2("1234", "00006", [2, 3]))
+dec_angle = round(np.interp(dec_angle, [min_angle, max_angle], [0, 2**resolution - 1]))
+print(dec_angle)
+
+bin_angle = format(dec_angle, "b")
+bin_angle = bin_angle.zfill(resolution)
+
+print(bin_angle)
+
+# result = truncation(test_list, 2)
+
+# print(result)
+
+# print(bit_flip("1"))
+# print(type(bit_flip("0")))
+
+# print(n_point_crossover2("1234", "00006", [2, 3]))

@@ -30,9 +30,20 @@ def CA_initialize(generate_random: bool = False): #or CA_run?
     tests = 4
     j = 0
 
+    min_position = -4.8
+    max_position = 4.8
+    min_velocity = -4
+    max_velocity = 4
+    min_angle = -0.42
+    max_angle = 0.42
+    min_ang_velocity = -4
+    max_ang_velocity = 4
+    resolution = 10
+    space_between_observations = 2
+
     # env = gym.make("CartPole-v1", render_mode="human")
     env = gym.make("CartPole-v1")
-    observation = env.reset(seed=SEED)
+    observation, info = env.reset()
     ruleset = gen_rrs(cfg_radius)
 
     if generate_random:
@@ -42,27 +53,56 @@ def CA_initialize(generate_random: bool = False): #or CA_run?
 
     #for _ in range(10000):
     while True:
-        
-        dec_angle = observation[2]
-        bin_angle = format(12 * 32 + round(dec_angle * 180/np.pi * 32), "b") # negative angles are 0-23, positive angles are 24-48
-        bin_angle = bin_angle.zfill(10)
-        # print(bin_angle)
+        observation_ca = "00"
+
+        dec_position = observation[0]
+        dec_position = round(np.interp(dec_position, [min_position, max_position],
+                                         [0, 2**resolution - 1])) # mapping to non-negative values
+        bin_position = format(dec_position, "b")
+        bin_position = bin_position.zfill(resolution)
+
+        observation_ca += bin_position
+        for _ in range(space_between_observations):
+            observation_ca += "0"
 
         dec_velocity = observation[1]
-        bin_velocity = format(round((2 + dec_velocity) * 100), "b") # adding offset of 2 to avoid negative values
-        bin_velocity = bin_angle.zfill(10)
+        dec_velocity = round(np.interp(dec_velocity, [min_velocity, max_velocity],
+                                         [0, 2**resolution - 1])) # mapping to non-negative values
+        bin_velocity = format(dec_velocity, "b")
+        bin_velocity = bin_velocity.zfill(resolution)
 
-        bin_observations = bin_angle + bin_velocity
+        observation_ca += bin_velocity
+        for _ in range(space_between_observations):
+            observation_ca += "0"
+
+        dec_angle = observation[2]
+        dec_angle = round(np.interp(dec_angle, [min_angle, max_angle],
+                                     [0, 2**resolution - 1]))
+        bin_angle = format(dec_angle, "b")
+        bin_angle = bin_angle.zfill(resolution)
+
+        observation_ca += bin_angle
+        for _ in range(space_between_observations):
+            observation_ca += "0"
+
+        dec_ang_velocity = observation[3]
+        dec_ang_velocity = round(np.interp(dec_ang_velocity, [min_ang_velocity, max_ang_velocity],
+                                     [0, 2**resolution - 1]))
+        bin_ang_velocity = format(dec_ang_velocity, "b")
+        bin_ang_velocity = bin_ang_velocity.zfill(resolution)
         
-        action = CA_majority(CA_propagate(ruleset, cfg_radius, bin_velocity))
-        observation, reward, terminated, truncated = env.step(action)
+        observation_ca += bin_ang_velocity
+
+        # print(f'observation: {observation}')
+        # print(f'length: {len(observation_ca)} observation: {observation_ca}')
+
+        action = CA_majority(CA_propagate(ruleset, cfg_radius, observation_ca))
+        observation, reward, terminated, truncated, info = env.step(action)
         time += reward
 
         if terminated or truncated:
             if len(population) < POPULATION:
                 if time > 50:
-                    # print(f'ruleset:\t{ruleset} \ttime: {time}')
-                    # population[ruleset] = time
                     population.append([ruleset, time])
 
                 ruleset = gen_rrs(cfg_radius)
@@ -70,16 +110,10 @@ def CA_initialize(generate_random: bool = False): #or CA_run?
             else:
                 # perform evolution
 
+                # print("doing evolution")
+
                 # step 1: evolve rules
                 if i == len(population):
-                    # print()
-                    # for rule in population:
-                        # print(f'ruleset:\t{rule}')
-                    
-                    # print(f'\nbatch: {batch_no}')
-                    # for i in range(len(population)):
-                    #     print(population[i])
-
                     # if max number of tries reached, evolve population
                     if j == tests:
                         # reset tries
@@ -91,13 +125,12 @@ def CA_initialize(generate_random: bool = False): #or CA_run?
                             individual[1] /= tests
                             fitness_ave += individual[1]
 
-
                         batch_no += 1
-                        fitness = max(population, key=lambda x: x[1])
+                        best_genome = max(population, key=lambda x: x[1])
                         fitness_ave /= len(population)
 
-                        print(f'batch:\t{batch_no} \tfitness max:\t{fitness[1]:.2f} \tfitness ave:\t{fitness_ave:.2f}')
-                        #  \tgenome:\t{fitness[0]}
+                        print_info(batch_no, fitness_ave, best_genome)
+
                         population = evolve(population, 0.8)
 
                     # else continue testing    
@@ -114,15 +147,18 @@ def CA_initialize(generate_random: bool = False): #or CA_run?
                         ruleset = population[i][0]
                     i += 1
 
-
-
             time = 0
-            observation = env.reset(seed = SEED)
+            observation, info = env.reset()
 
     # print(population)
     env.close()
 
-
+def print_info(batch_no, fitness_ave, best_genome):
+    print(f'batch:\t{batch_no}\t', end='')
+    print(f'fitness ave:\t{fitness_ave:.2f}\t', end='')
+    print(f'fitness max:\t{best_genome[1]:.2f}\t', end='')
+    print(f'genome:\t{best_genome[0]}\t', end='')
+    print()
 
 def CA_propagate(ruleset: str, radius: int, initial_values: str) -> str:
     '''
@@ -138,23 +174,28 @@ def CA_propagate(ruleset: str, radius: int, initial_values: str) -> str:
 
     # variable declaration
     CA_length = len(initial_values)
-    new_values = ""
+    current_values = initial_values
 
     #print(f'initial values:\t{initial_values}')
     #print(f'ruleset:\t{ruleset}')
     
     # range is size of cellular automaton/initial value
-    for i in range(CA_length):
-        substr = ""
-        for cell in range(-radius, radius+1):
-            substr += initial_values[(i + cell) % CA_length]
+    for _ in range(CA_length):
+        new_values = ""
+        for j in range(CA_length):
+            substr = ""
+            for cell in range(-radius, radius+1):
+                substr += current_values[(j + cell) % CA_length]
 
-        # convert substr = decimal
-        substr_10 = int(substr, 2)
-        new_values += ruleset[substr_10]
-    # /loop
+            # convert substr = decimal
+            substr_10 = int(substr, 2)
+            new_values += ruleset[substr_10]
+        # /loop through CA row
+        # print(current_values)
+        current_values = new_values
+    # /loop through new CA
 
-    #print(f'new values:\t{new_values}')
+    # print(f'new values:\t{new_values}')
     
     return new_values
 
@@ -219,7 +260,7 @@ def evolve(population: list, p):
 
     # 1. choose individuals
 
-    chosen_ones = tournament(population, round(POPULATION * 0.5), 10)
+    chosen_ones = tournament(population, round(POPULATION * 0.5), 20)
 
     # 2. reproduction
     while(len(population_new) < len(population)):
@@ -230,7 +271,7 @@ def evolve(population: list, p):
         choice2 = random.choice(chosen_ones)
         #print(f"choices: {choices}")
         temp = n_point_crossover(choice1[0], choice2[0], [round(len(choice1[0])/2)])
-        temp = mutation(temp, 0.01)
+        temp = mutation(temp, 0.04)
         population_new.append([temp, 0])
 
     # print(f'new population:')
@@ -357,13 +398,13 @@ def bit_flip(ch: str) -> str:
 
 
 
-cfg_radius = 4 # neighbours = radius*2
+cfg_radius = 2 # neighbours = radius*2
 
 
 
 def main():
     # cellular_automaton(gen_rrs(5), 2, "101110")
-    CA_initialize(False)
+    CA_initialize(True)
     
 
 if __name__ == "__main__":
