@@ -6,6 +6,11 @@ import numpy as np
 import pandas as pd
 import random
 
+
+# for writing yaml configs
+import yaml
+from yaml.loader import SafeLoader
+
 # TODO: Rename variables to match terminology from lectures
 
 # phenotype: ruleset
@@ -13,6 +18,7 @@ import random
 
 # max population
 POPULATION = 100
+SEED = 42
 
 def CA_initialize(generate_random: bool = False): #or CA_run?
 
@@ -26,7 +32,7 @@ def CA_initialize(generate_random: bool = False): #or CA_run?
 
     # env = gym.make("CartPole-v1", render_mode="human")
     env = gym.make("CartPole-v1")
-    observation, info = env.reset(seed=42)
+    observation = env.reset(seed=SEED)
     ruleset = gen_rrs(cfg_radius)
 
     if generate_random:
@@ -49,7 +55,7 @@ def CA_initialize(generate_random: bool = False): #or CA_run?
         bin_observations = bin_angle + bin_velocity
         
         action = CA_majority(CA_propagate(ruleset, cfg_radius, bin_velocity))
-        observation, reward, terminated, truncated, info = env.step(action)
+        observation, reward, terminated, truncated = env.step(action)
         time += reward
 
         if terminated or truncated:
@@ -108,10 +114,10 @@ def CA_initialize(generate_random: bool = False): #or CA_run?
                         ruleset = population[i][0]
                     i += 1
 
-            
+
 
             time = 0
-            observation, info = env.reset()
+            observation = env.reset(seed = SEED)
 
     # print(population)
     env.close()
@@ -126,7 +132,8 @@ def CA_propagate(ruleset: str, radius: int, initial_values: str) -> str:
 
         Initial values is binary string from observations
 
-        Returns: new_values
+        Returns: 
+            new_values
     '''
 
     # variable declaration
@@ -159,7 +166,9 @@ def CA_majority(bitstring: str) -> bool:
         Determines action of the cart.
         Currently decides based on majority vote.
 
-        Returns: 0 (left), 1 (right)
+        Returns: 
+            0 (left)
+            1 (right)
     '''
     
     ones = bitstring.count('1')
@@ -197,8 +206,11 @@ def evolve(population: list, p):
     '''
         Performs evolution (tm)
 
-        Input: list containing population of genomes (rules)
-        Returns: list containing new population
+        Input: 
+            population: list containing population of genomes (rules)
+            p: TODO
+        Returns: 
+            list containing new population
     '''
 
     population_new = []
@@ -207,7 +219,7 @@ def evolve(population: list, p):
 
     # 1. choose individuals
 
-    chosen_ones = tournament(population, POPULATION, 10)
+    chosen_ones = tournament(population, round(POPULATION * 0.5), 10)
 
     # 2. reproduction
     while(len(population_new) < len(population)):
@@ -218,10 +230,8 @@ def evolve(population: list, p):
         choice2 = random.choice(chosen_ones)
         #print(f"choices: {choices}")
         temp = n_point_crossover(choice1[0], choice2[0], [round(len(choice1[0])/2)])
-        temp = mutation(temp, 0.05)
+        temp = mutation(temp, 0.01)
         population_new.append([temp, 0])
-
-
 
     # print(f'new population:')
     # for i in population_new:
