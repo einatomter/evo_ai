@@ -19,6 +19,7 @@ from yaml.loader import SafeLoader
 # max population
 POPULATION = 100
 SEED = 42
+cfg_radius = 2 # neighbours = radius*2
 
 def CA_initialize(generate_random: bool = False): #or CA_run?
 
@@ -38,7 +39,7 @@ def CA_initialize(generate_random: bool = False): #or CA_run?
     max_angle = 0.42
     min_ang_velocity = -4
     max_ang_velocity = 4
-    resolution = 10
+    resolution = 20
     space_between_observations = 2
 
     # env = gym.make("CartPole-v1", render_mode="human")
@@ -263,7 +264,7 @@ def evolve(population: list, p):
     chosen_ones = tournament(population, round(POPULATION * 0.5), 20)
 
     # 2. reproduction
-    while(len(population_new) < len(population)):
+    while(len(population_new) < POPULATION):
         #print(f"population_new: {len(population_new)} \t population: {len(population)}")       
 
         # choices = random.sample(chosen_ones, 2)
@@ -271,8 +272,10 @@ def evolve(population: list, p):
         choice2 = random.choice(chosen_ones)
         #print(f"choices: {choices}")
         temp = n_point_crossover(choice1[0], choice2[0], [round(len(choice1[0])/2)])
-        temp = mutation(temp, 0.04)
-        population_new.append([temp, 0])
+        temp[0] = mutation(temp[0], 0.04)
+        temp[1] = mutation(temp[1], 0.04)
+        population_new.append([temp[0], 0])
+        population_new.append([temp[1], 0])
 
     # print(f'new population:')
     # for i in population_new:
@@ -340,19 +343,22 @@ def n_point_crossover(parent1: str, parent2: str, cut_points: list) -> str:
         Performs nonvariable length crossover at specified cut points
     '''
 
-    offspring = ""
+    offspring1 = ""
+    offspring2 = ""
     switch = False
 
     for i in range(len(parent1)):
         if i in cut_points:
             switch = not switch
         if not switch:
-            offspring += parent1[i]
+            offspring1 += parent1[i]
+            offspring2 += parent2[i]
         else:
-            offspring += parent2[i]
+            offspring1 += parent2[i]
+            offspring2 += parent1[i]
 
     # print(offspring)
-    return offspring
+    return [offspring1, offspring2]
 
 
 
@@ -398,7 +404,6 @@ def bit_flip(ch: str) -> str:
 
 
 
-cfg_radius = 2 # neighbours = radius*2
 
 
 
