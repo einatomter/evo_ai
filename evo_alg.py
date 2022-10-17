@@ -24,20 +24,16 @@ class GA:
 
         population_new = []
 
-        # print(f'old population: {population}')
-
         # 1. choose individuals
-
         chosen_ones = self.tournament(population, round(self._MAXPOP * 0.5), 20)
 
         # 2. reproduction
-        while(len(population_new) < self._MAXPOP):
-            #print(f"population_new: {len(population_new)} \t population: {len(population)}")       
+        while(len(population_new) < self._MAXPOP):   
 
             # choices = random.sample(chosen_ones, 2)
             choice1 = random.choice(chosen_ones)
             choice2 = random.choice(chosen_ones)
-            #print(f"choices: {choices}")
+            
             temp = self.n_point_crossover(choice1[0], choice2[0], [round(len(choice1[0])/2)])
             temp[0] = self.mutation(temp[0], 0.04)
             temp[1] = self.mutation(temp[1], 0.04)
@@ -55,7 +51,6 @@ class GA:
             Returns list of n best individuals
         '''
         chosen = []
-
         population = sorted(population, key=lambda x: x[1], reverse=1)
         
         for i in range (n):
@@ -80,7 +75,6 @@ class GA:
         '''
 
         n_population = self.uniform(population, n)
-        
         chosen_ones = self.truncation(n_population, m)
 
         return chosen_ones

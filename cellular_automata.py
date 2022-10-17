@@ -5,6 +5,7 @@ import gym
 import numpy as np
 import pandas as pd
 import random
+from progress.bar import Bar
 from evo_alg import GA
 
 
@@ -14,46 +15,43 @@ from yaml.loader import SafeLoader
 
 
 class CA:
-    def __init__(self, maxpop: int, seed: int, radius: int) -> None:
-
+    def __init__(self) -> None:
         # Config stuff
-        self._MAXPOP = maxpop #100 maximum amount of rules of the first random population
-        self._SEED = seed #42 seed for initial env.reset()
-        self._RADIUS = radius #2  neighbours = radius*2
+        self._MAXPOP = 100 #100 maximum amount of rules of the first random population
+        self._RADIUS = 2 #2  neighbours = radius*2
+        self._RANDOM_THRESHOLD = False # random search with (False) or without threshold (True)
+        self._RANDOM_THRESHOLD_SIZE = 50
+        self._SEED = 42 #42 seed for initial env.reset()
         self._TESTS = 4 # how many times to test evolved rules before evolving again
-        self._RANDOM_THRESHOLD = True # random search with (False) or without threshold (True)
 
         # env = gym.make("CartPole-v1", render_mode="human")
         self.env = gym.make("CartPole-v1")
         self.observation, info = self.env.reset()
 
         self.ga_env = GA(self._MAXPOP)
+        self.CA_run()
 
-        self.CA_initialize(self._RANDOM_THRESHOLD)
 
-
-    def CA_initialize(self, generate_random: bool = False): #or CA_run?
-
+    def CA_run(self):
         population = []
         time = 0
         batch_no = 0
 
         # Random rulesets generated in a list
-        if generate_random:
+        if self._RANDOM_THRESHOLD:
             population = self.gen_pop()
         else:
-            population = self.gen_pop_with_threshold(50)
+            population = self.gen_pop_with_threshold()
 
-        while True: # maybe need something better, some evolve threshold maybe
-            
+        while True: # maybe need something better, some evolve threshold maybe to end the evolution cycle
             # Evolve all rulesets in the population
             population = self.ga_env.evolve(population, 0.8)
 
-            # Test the whole population x amount of times
+            # Test the whole population x (self._TESTS) amount of times
             for _ in range(self._TESTS):
                 for i in range(len(population)):
                     while True:
-                        action = self.CA_majority(self.CA_propagate(population[i][0], self._RADIUS, self.observe()))
+                        action = self.majority(self.propagate(population[i][0], self._RADIUS, self.observe()))
                         self.observation, reward, terminated, truncated, info = self.env.step(action)
                         time += reward
 
@@ -63,7 +61,6 @@ class CA:
                             self.observation, info = self.env.reset()
                             break
                 
-            
             fitness_ave = 0
             # Sum of fitness averages of all individuals
             for guy in population:
@@ -76,10 +73,40 @@ class CA:
             fitness_ave /= len(population)
             self.print_info(batch_no, fitness_ave, best_genome)
 
-        self.env.close() #this thing wants to close stuff but not with our WHILE TRU :D
+        #self.env.close() this thing wants to close stuff but not with WHILE TRU :D
+
+    
+    def gen_pop_with_threshold(self) -> list:
+        population = []
+        time = 0
+        
+        with Bar('Generating random population', max=self._MAXPOP, fill='#') as bar:
+            while len(population) < self._MAXPOP:
+                ruleset = self.gen_rrs()
+                action = self.majority(self.propagate(ruleset, self._RADIUS, self.observe()))
+                self.observation, reward, terminated, truncated, info = self.env.step(action)
+                time += reward
+                
+                if terminated or truncated:
+                    if time > self._RANDOM_THRESHOLD_SIZE:
+                        population.append([ruleset, time])
+                        bar.next()
+                    time = 0
+                    self.observation, info = self.env.reset()
+
+        return population
+
+
+    def gen_pop(self) -> list:
+        population = []
+        
+        for i in range(self._MAXPOP):
+            population.append([self.gen_rrs(), 0])
+
+        return population
+
 
     def observe(self) -> str:
-        
         min_position = -4.8
         max_position = 4.8
         min_velocity = -4
@@ -91,10 +118,9 @@ class CA:
         resolution = 20
         space_between_observations = 2
 
-        #might change all this to a for-loop
+        #could be a for-loop but I guess it doesn't matter much
         observation_ca = "00"
 
-        
         dec_position = self.observation[0]
         dec_position = round(np.interp(dec_position, [min_position, max_position],
                                         [0, 2**resolution - 1])) # mapping to non-negative values                          
@@ -132,40 +158,11 @@ class CA:
         bin_ang_velocity = bin_ang_velocity.zfill(resolution)
         
         observation_ca += bin_ang_velocity
+        
         return observation_ca
 
 
-    def gen_pop_with_threshold(self, threshold: int) -> list:
-        population = []
-        time = 0
-        
-        while len(population) < self._MAXPOP:
-            
-            ruleset = self.gen_rrs()
-            action = self.CA_majority(self.CA_propagate(ruleset, self._RADIUS, self.observe()))
-            self.observation, reward, terminated, truncated, info = self.env.step(action)
-            time += reward
-            
-            if terminated or truncated:
-                if time > threshold:
-                    population.append([ruleset, time])
-                
-                time = 0
-                self.observation, info = self.env.reset()
-
-        return population
-
-
-    def gen_pop(self) -> list:
-        population = []
-        
-        for i in range(self._MAXPOP):
-                population.append([self.gen_rrs(), 0])
-
-        return population
-
-
-    def CA_propagate(self, ruleset: str, radius: int, initial_values: str) -> str:
+    def propagate(self, ruleset: str, radius: int, initial_values: str) -> str:
         '''
             Performs update step
 
@@ -180,9 +177,6 @@ class CA:
         # variable declaration
         CA_length = len(initial_values)
         current_values = initial_values
-
-        #print(f'initial values:\t{initial_values}')
-        #print(f'ruleset:\t{ruleset}')
         
         # range is size of cellular automaton/initial value
         for _ in range(CA_length):
@@ -191,21 +185,16 @@ class CA:
                 substr = ""
                 for cell in range(-radius, radius+1):
                     substr += current_values[(j + cell) % CA_length]
-
                 # convert substr = decimal
                 substr_10 = int(substr, 2)
                 new_values += ruleset[substr_10]
             # /loop through CA row
-            # print(current_values)
             current_values = new_values
         # /loop through new CA
-
-        # print(f'new values:\t{new_values}')
-        
         return new_values
 
 
-    def CA_majority(self, bitstring: str) -> bool:
+    def majority(self, bitstring: str) -> bool:
         '''
             Determines action of the cart.
             Currently decides based on majority vote.
@@ -248,4 +237,4 @@ class CA:
         print()
         
 
-insaneAI = CA(100, 42, 2)
+insaneAI = CA()
