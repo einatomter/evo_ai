@@ -23,7 +23,19 @@ class CA:
         self._RANDOM_THRESHOLD_SIZE = 30
         self._ENABLE_SEED = False
         self._SEED = 42 #42 seed for initial env.reset()
-        self._TESTS = 2 # how many times to test evolved rules before evolving again
+        self._TESTS = 3 # how many times to test evolved rules before evolving again
+
+        # observation parameters
+        self.min_position = -2.4
+        self.max_position = 2.4
+        self.min_velocity = -3
+        self.max_velocity = 3
+        self.min_angle = -0.2095
+        self.max_angle = 0.2095
+        self.min_ang_velocity = -2
+        self.max_ang_velocity = 2
+        self.resolution = 20
+        self.space_between_observations = 4
 
         # env = gym.make("CartPole-v1", render_mode="human")
         self.env = gym.make("CartPole-v1")
@@ -117,57 +129,46 @@ class CA:
 
 
     def observe(self) -> str:
-        min_position = -2.4
-        max_position = 2.4
-        min_velocity = -3
-        max_velocity = 3
-        min_angle = -0.2095
-        max_angle = 0.2095
-        min_ang_velocity = -2
-        max_ang_velocity = 2
-        resolution = 20
-        space_between_observations = 4
-
         observation_ca = ""
 
-        for _ in range(space_between_observations):
+        for _ in range(self.space_between_observations):
             observation_ca += "0"
 
         dec_position = self.observation[0]
-        dec_position = round(np.interp(dec_position, [min_position, max_position],
-                                        [0, 2**resolution - 1])) # mapping to non-negative values                          
+        dec_position = round(np.interp(dec_position, [self.min_position, self.max_position],
+                                        [0, 2**self.resolution - 1])) # mapping to non-negative values                          
         bin_position = format(dec_position, "b")
-        bin_position = bin_position.zfill(resolution)
+        bin_position = bin_position.zfill(self.resolution)
 
         observation_ca += bin_position
-        for _ in range(space_between_observations):
+        for _ in range(self.space_between_observations):
             observation_ca += "0"
 
         dec_velocity = self.observation[1]
-        dec_velocity = round(np.interp(dec_velocity, [min_velocity, max_velocity],
-                                        [0, 2**resolution - 1])) # mapping to non-negative values
+        dec_velocity = round(np.interp(dec_velocity, [self.min_velocity, self.max_velocity],
+                                        [0, 2**self.resolution - 1])) # mapping to non-negative values
         bin_velocity = format(dec_velocity, "b")
-        bin_velocity = bin_velocity.zfill(resolution)
+        bin_velocity = bin_velocity.zfill(self.resolution)
 
         observation_ca += bin_velocity
-        for _ in range(space_between_observations):
+        for _ in range(self.space_between_observations):
             observation_ca += "0"
 
         dec_angle = self.observation[2]
-        dec_angle = round(np.interp(dec_angle, [min_angle, max_angle],
-                                    [0, 2**resolution - 1]))
+        dec_angle = round(np.interp(dec_angle, [self.min_angle, self.max_angle],
+                                    [0, 2**self.resolution - 1]))
         bin_angle = format(dec_angle, "b")
-        bin_angle = bin_angle.zfill(resolution)
+        bin_angle = bin_angle.zfill(self.resolution)
 
         observation_ca += bin_angle
-        for _ in range(space_between_observations):
+        for _ in range(self.space_between_observations):
             observation_ca += "0"
 
         dec_ang_velocity = self.observation[3]
-        dec_ang_velocity = round(np.interp(dec_ang_velocity, [min_ang_velocity, max_ang_velocity],
-                                    [0, 2**resolution - 1]))
+        dec_ang_velocity = round(np.interp(dec_ang_velocity, [self.min_ang_velocity, self.max_ang_velocity],
+                                    [0, 2**self.resolution - 1]))
         bin_ang_velocity = format(dec_ang_velocity, "b")
-        bin_ang_velocity = bin_ang_velocity.zfill(resolution)
+        bin_ang_velocity = bin_ang_velocity.zfill(self.resolution)
         
         observation_ca += bin_ang_velocity
         
