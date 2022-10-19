@@ -11,7 +11,7 @@ class GA:
     def __init__(self, maxpop: int) -> None:
         self._MAXPOP = maxpop
 
-    def evolve(self, population: list, p):
+    def evolve(self, population: list):
         '''
             Performs evolution (tm)
 
@@ -46,6 +46,37 @@ class GA:
         return population_new
 
 
+    def overlapping_model(self, population: list):
+        population_new = []
+
+        # n = offspring 100, m = parents 20
+        # x = n+m
+        # population_new = m of x
+
+        # 1. choose individuals
+        parents = self.tournament(population, round(self._MAXPOP * 0.5), 20)
+
+        # 2. reproduction
+        while(len(population_new) < self._MAXPOP):   
+
+            # choices = random.sample(chosen_ones, 2)
+            choice1 = random.choice(parents)
+            choice2 = random.choice(parents)
+            
+            temp = self.n_point_crossover(choice1[0], choice2[0], [round(len(choice1[0])/2)])
+            temp[0] = self.mutation(temp[0], 0.04)
+            temp[1] = self.mutation(temp[1], 0.04)
+            population_new.append([temp[0], 0])
+            population_new.append([temp[1], 0])
+
+        # print(f'new population:')
+        # for i in population_new:
+        #     print(i)
+        population_new.extend(parents)
+        population_new = self.uniform(population_new, self._MAXPOP)
+
+        return population_new      
+
     def truncation(self, population: list, n: int) -> list:
         '''
             Returns list of n best individuals
@@ -61,7 +92,7 @@ class GA:
 
     def uniform(self, population: list, n: int) -> list:
         '''
-            Returns a randomly picked individual
+            Returns n amount of individuals from population
         '''
         
         individual = random.sample(population, n)

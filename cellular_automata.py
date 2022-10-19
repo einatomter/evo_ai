@@ -19,10 +19,10 @@ class CA:
         # Config stuff
         self._MAXPOP = 100 #100 maximum amount of rules of the first random population
         self._RADIUS = 2 #2  neighbours = radius*2
-        self._RANDOM_THRESHOLD = False # random search with (False) or without threshold (True)
+        self._RANDOM_THRESHOLD = True # random search with (False) or without threshold (True)
         self._RANDOM_THRESHOLD_SIZE = 50
         self._SEED = 42 #42 seed for initial env.reset()
-        self._TESTS = 4 # how many times to test evolved rules before evolving again
+        self._TESTS = 2 # how many times to test evolved rules before evolving again
 
         # env = gym.make("CartPole-v1", render_mode="human")
         self.env = gym.make("CartPole-v1")
@@ -45,7 +45,7 @@ class CA:
 
         while True: # maybe need something better, some evolve threshold maybe to end the evolution cycle
             # Evolve all rulesets in the population
-            population = self.ga_env.evolve(population, 0.8)
+            population = self.ga_env.overlapping_model(population)
 
             # Test the whole population x (self._TESTS) amount of times
             for _ in range(self._TESTS):
@@ -107,12 +107,12 @@ class CA:
 
 
     def observe(self) -> str:
-        min_position = -4.8
-        max_position = 4.8
-        min_velocity = -4
-        max_velocity = 4
-        min_angle = -0.42
-        max_angle = 0.42
+        min_position = -2.4
+        max_position = 2.4
+        min_velocity = -2
+        max_velocity = 2
+        min_angle = -0.2095
+        max_angle = 0.2095
         min_ang_velocity = -4
         max_ang_velocity = 4
         resolution = 20
