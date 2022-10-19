@@ -192,19 +192,22 @@ class CA:
         current_values = initial_values
         
         # range is size of cellular automaton/initial value
+        # range is how many times the CA is propagated
         for _ in range(int(CA_length)):
             new_values = ""
+            # looping through CA
             for j in range(CA_length):
                 substr = ""
                 for cell in range(-radius, radius+1):
                     substr += current_values[(j + cell) % CA_length]
-                # convert substr = decimal
-                substr_10 = int(substr, 2)
-                # print(substr_10)
-                new_values += ruleset[substr_10]
-            # /loop through CA row
+                # convert substr to decimal
+                # used to find corresponding rule index
+                rule_index = int(substr, 2)
+                # print(rule_index)
+                new_values += ruleset[rule_index]
+            # /loop CA
             current_values = new_values
-        # /loop through new CA
+        # /loop propagation
         return new_values
 
 
