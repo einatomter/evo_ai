@@ -17,12 +17,12 @@ from yaml.loader import SafeLoader
 class CA:
     def __init__(self) -> None:
         # Config stuff
-        self._MAXPOP = 100                  #100 maximum amount of rules of the first random population
-        self._RADIUS = 2                    #2  neighbours = radius*2
-        self._ENABLE_THRESHOLD = True       # random search with (False) or without threshold (True)
+        self._MAXPOP = 100                  # 100 maximum amount of rules of the first random population
+        self._RADIUS = 2                    # 2 neighbours = radius*2
+        self._ENABLE_THRESHOLD = False       # random search with (False) or without threshold (True)
         self._RANDOM_THRESHOLD_SIZE = 30    # threshold for genome to be accepted
         self._ENABLE_SEED = False           # set specific seed
-        self._SEED = 42                     #42 seed for initial env.reset()
+        self._SEED = 42                     # 42 seed for initial env.reset()
         self._TESTS = 3                     # how many times to test evolved rules before evolving again
 
         # observation parameters
@@ -200,6 +200,7 @@ class CA:
                     substr += current_values[(j + cell) % CA_length]
                 # convert substr = decimal
                 substr_10 = int(substr, 2)
+                # print(substr_10)
                 new_values += ruleset[substr_10]
             # /loop through CA row
             current_values = new_values
