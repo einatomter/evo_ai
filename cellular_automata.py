@@ -19,14 +19,18 @@ class CA:
         # Config stuff
         self._MAXPOP = 100 #100 maximum amount of rules of the first random population
         self._RADIUS = 2 #2  neighbours = radius*2
-        self._RANDOM_THRESHOLD = False # random search with (False) or without threshold (True)
-        self._RANDOM_THRESHOLD_SIZE = 50
+        self._ENABLE_THRESHOLD = True # random search with (False) or without threshold (True)
+        self._RANDOM_THRESHOLD_SIZE = 30
+        self._ENABLE_SEED = False
         self._SEED = 42 #42 seed for initial env.reset()
-        self._TESTS = 4 # how many times to test evolved rules before evolving again
+        self._TESTS = 2 # how many times to test evolved rules before evolving again
 
         # env = gym.make("CartPole-v1", render_mode="human")
         self.env = gym.make("CartPole-v1")
-        self.observation, info = self.env.reset()
+        if self._ENABLE_SEED:
+            self.observation, info = self.env.reset(self._SEED)
+        else:
+            self.observation, info = self.env.reset()
 
         self.ga_env = GA(self._MAXPOP)
         self.CA_run()
@@ -38,10 +42,10 @@ class CA:
         batch_no = 0
 
         # Random rulesets generated in a list
-        if self._RANDOM_THRESHOLD:
-            population = self.gen_pop()
-        else:
+        if self._ENABLE_THRESHOLD:
             population = self.gen_pop_with_threshold()
+        else:
+            population = self.gen_pop()
 
         while True: # maybe need something better, some evolve threshold maybe to end the evolution cycle
             # Evolve all rulesets in the population
@@ -58,7 +62,10 @@ class CA:
                         if terminated or truncated:
                             population[i][1] += time
                             time = 0
-                            self.observation, info = self.env.reset()
+                            if self._ENABLE_SEED:
+                                self.observation, info = self.env.reset(self._SEED)
+                            else:
+                                self.observation, info = self.env.reset()
                             break
                 
             fitness_ave = 0
@@ -92,7 +99,10 @@ class CA:
                         population.append([ruleset, time])
                         bar.next()
                     time = 0
-                    self.observation, info = self.env.reset()
+                    if self._ENABLE_SEED:
+                        self.observation, info = self.env.reset(self._SEED)
+                    else:
+                        self.observation, info = self.env.reset()
 
         return population
 
@@ -107,19 +117,21 @@ class CA:
 
 
     def observe(self) -> str:
-        min_position = -4.8
-        max_position = 4.8
-        min_velocity = -4
-        max_velocity = 4
-        min_angle = -0.42
-        max_angle = 0.42
-        min_ang_velocity = -4
-        max_ang_velocity = 4
+        min_position = -2.4
+        max_position = 2.4
+        min_velocity = -3
+        max_velocity = 3
+        min_angle = -0.2095
+        max_angle = 0.2095
+        min_ang_velocity = -2
+        max_ang_velocity = 2
         resolution = 20
-        space_between_observations = 2
+        space_between_observations = 4
 
-        #could be a for-loop but I guess it doesn't matter much
-        observation_ca = "00"
+        observation_ca = ""
+
+        for _ in range(space_between_observations):
+            observation_ca += "0"
 
         dec_position = self.observation[0]
         dec_position = round(np.interp(dec_position, [min_position, max_position],
@@ -179,7 +191,7 @@ class CA:
         current_values = initial_values
         
         # range is size of cellular automaton/initial value
-        for _ in range(CA_length):
+        for _ in range(int(CA_length)):
             new_values = ""
             for j in range(CA_length):
                 substr = ""
@@ -230,7 +242,7 @@ class CA:
 
     @staticmethod
     def print_info(batch_no, fitness_ave, best_genome):
-        print(f'batch:\t{batch_no}\t', end='')
+        print(f'gen:\t{batch_no}\t', end='')
         print(f'fitness ave:\t{fitness_ave:.2f}\t', end='')
         print(f'fitness max:\t{best_genome[1]:.2f}\t', end='')
         print(f'genome:\t{best_genome[0]}\t', end='')
