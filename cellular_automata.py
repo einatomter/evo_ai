@@ -19,16 +19,16 @@ class CA:
         # Config stuff
         self._MAXPOP = 100 #100 maximum amount of rules of the first random population
         self._RADIUS = 2 #2  neighbours = radius*2
-        self._ENABLE_THRESHOLD = True # random search with (False) or without threshold (True)
+        self._ENABLE_THRESHOLD = False # random search with (False) or without threshold (True)
         self._RANDOM_THRESHOLD_SIZE = 30
-        self._ENABLE_SEED = False
+        self._ENABLE_SEED = True
         self._SEED = 42 #42 seed for initial env.reset()
-        self._TESTS = 2 # how many times to test evolved rules before evolving again
+        self._TESTS = 1 # how many times to test evolved rules before evolving again
 
         # env = gym.make("CartPole-v1", render_mode="human")
         self.env = gym.make("CartPole-v1")
         if self._ENABLE_SEED:
-            self.observation, info = self.env.reset(self._SEED)
+            self.observation, info = self.env.reset(seed = self._SEED)
         else:
             self.observation, info = self.env.reset()
 
@@ -63,7 +63,7 @@ class CA:
                             population[i][1] += time
                             time = 0
                             if self._ENABLE_SEED:
-                                self.observation, info = self.env.reset(self._SEED)
+                                self.observation, info = self.env.reset(seed = self._SEED)
                             else:
                                 self.observation, info = self.env.reset()
                             break
@@ -100,7 +100,7 @@ class CA:
                         bar.next()
                     time = 0
                     if self._ENABLE_SEED:
-                        self.observation, info = self.env.reset(self._SEED)
+                        self.observation, info = self.env.reset(seed = self._SEED)
                     else:
                         self.observation, info = self.env.reset()
 
