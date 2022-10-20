@@ -14,15 +14,17 @@ from yaml.loader import SafeLoader
 
 
 class CA:
-    def __init__(self) -> None:
+    def __init__(self, env, genome: str = "") -> None:
         # Config stuff
         self._MAXPOP = 100                  # 100 maximum amount of rules of the first random population
         self._RADIUS = 2                    # 2 neighbours = radius*2
         self._ENABLE_THRESHOLD = False      # random search with (False) or without threshold (True)
         self._RANDOM_THRESHOLD_SIZE = 30    # threshold for genome to be accepted
-        self._ENABLE_SEED = False           # use seed
+        self._ENABLE_SEED = False            # set specific seed
         self._SEED = 42                     # 42 seed for initial env.reset()
         self._TESTS = 4                     # how many times to test evolved rules before evolving again
+        self._GENOME = genome
+        
 
         # observation parameters
         self.resolution = 10                # bitstring size for each observation
@@ -37,14 +39,13 @@ class CA:
         self.max_ang_velocity = 2
 
         # env = gym.make("CartPole-v1", render_mode="human")
-        self.env = gym.make("CartPole-v1")
+        self.env = env
         if self._ENABLE_SEED:
             self.observation, info = self.env.reset(seed = self._SEED)
         else:
             self.observation, info = self.env.reset()
 
         self.ga_env = GA(self._MAXPOP)
-        self.CA_run()
 
 
     def CA_run(self):
@@ -270,6 +271,29 @@ class CA:
 
         return rrs_bit
 
+    def CA_play(self):
+        time = 0
+        average_time = 0
+        tests = 50
+        print(self._GENOME)
+        for _ in range(tests):
+            while True:
+                action = self.majority(self.propagate(self._GENOME, self._RADIUS, self.observe_alternate()))
+                self.observation, reward, terminated, truncated, info = self.env.step(action)
+                time += reward
+
+                if terminated or truncated:
+                    print(f"time: {time}")
+                    average_time += time
+                    time = 0
+                    if self._ENABLE_SEED:
+                        self.observation, info = self.env.reset(seed = self._SEED)
+                    else:
+                        self.observation, info = self.env.reset()
+                    break
+        print(f"average time: {average_time/tests}")
+        self.env.close()
+
     @staticmethod
     def binary_bin(x: float, min: float, max: float, resolution: int) -> str:
         '''
@@ -313,6 +337,3 @@ class CA:
         print(f'fitness max:\t{best_genome[1]:.2f}\t', end='')
         print(f'genome:\t{best_genome[0]}\t', end='')
         print()
-        
-
-insaneAI = CA()
