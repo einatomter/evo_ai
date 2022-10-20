@@ -165,3 +165,4 @@ for i in range(len(intervals)-1):
 print(bin_observation)
 
 # best genome for seed 42 so far: 11100001100010011011100010101100
+# best genome random: 01101001101000111101101010110001

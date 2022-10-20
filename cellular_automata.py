@@ -20,13 +20,13 @@ class CA:
         self._RADIUS = 2                    # 2 neighbours = radius*2
         self._ENABLE_THRESHOLD = False      # random search with (False) or without threshold (True)
         self._RANDOM_THRESHOLD_SIZE = 30    # threshold for genome to be accepted
-        self._ENABLE_SEED = True            # set specific seed
+        self._ENABLE_SEED = False           # use seed
         self._SEED = 42                     # 42 seed for initial env.reset()
-        self._TESTS = 1                     # how many times to test evolved rules before evolving again
+        self._TESTS = 4                     # how many times to test evolved rules before evolving again
 
         # observation parameters
-        self.resolution = 20                # bitstring size for each observation
-        self.space_between_observations = 4 # zeroes between each observation
+        self.resolution = 10                # bitstring size for each observation
+        self.space_between_observations = 2 # zeroes between each observation
         self.min_position = -2.4
         self.max_position = 2.4
         self.min_velocity = -3
