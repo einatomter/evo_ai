@@ -23,7 +23,7 @@ class CA:
         self._RANDOM_THRESHOLD_SIZE = 30    # threshold for genome to be accepted
         self._ENABLE_SEED = True            # set specific seed
         self._SEED = 42                     # 42 seed for initial env.reset()
-        self._TESTS = 1                     # how many times to test evolved rules before evolving again
+        self._TESTS = 3                     # how many times to test evolved rules before evolving again
 
         # observation parameters
         self.resolution = 20                # bitstring size for each observation
@@ -51,7 +51,7 @@ class CA:
     def CA_run(self):
         population = []
         time = 0
-        batch_no = 0
+        gen = 0
 
         # Random rulesets generated in a list
         if self._ENABLE_THRESHOLD:
@@ -80,7 +80,7 @@ class CA:
                             else:
                                 self.observation, info = self.env.reset()
                             break
-                
+                        
             fitness_ave = 0
             # Sum of fitness averages of all individuals
             for guy in population:
@@ -88,10 +88,10 @@ class CA:
                 fitness_ave += guy[1]
 
             # Print batch info (fitness average, fitness max, best ruleset) 
-            batch_no += 1
+            gen += 1
             best_genome = max(population, key=lambda x: x[1])
             fitness_ave /= len(population)
-            self.print_info(batch_no, fitness_ave, best_genome)
+            self.print_info(gen, fitness_ave, best_genome)
 
         #self.env.close() this thing wants to close stuff but not with WHILE TRU :D
 
@@ -257,8 +257,8 @@ class CA:
         return rrs_bit
 
     @staticmethod
-    def print_info(batch_no, fitness_ave, best_genome):
-        print(f'gen:\t{batch_no}\t', end='')
+    def print_info(gen, fitness_ave, best_genome):
+        print(f'gen:\t{gen}\t', end='')
         print(f'fitness ave:\t{fitness_ave:.2f}\t', end='')
         print(f'fitness max:\t{best_genome[1]:.2f}\t', end='')
         print(f'genome:\t{best_genome[0]}\t', end='')
