@@ -25,7 +25,6 @@ class CA:
         self._TESTS = 4                     # how many times to test evolved rules before evolving again
         self._GENOME = genome
         
-
         # observation parameters
         self.resolution = 10                # bitstring size for each observation
         self.space_between_observations = 2 # zeroes between each observation
@@ -38,7 +37,6 @@ class CA:
         self.min_ang_velocity = -2
         self.max_ang_velocity = 2
 
-        # env = gym.make("CartPole-v1", render_mode="human")
         self.env = env
         if self._ENABLE_SEED:
             self.observation, info = self.env.reset(seed = self._SEED)
@@ -98,18 +96,18 @@ class CA:
 
         #self.env.close() this thing wants to close stuff but not with WHILE TRU :D
 
-    
+
     def gen_pop_with_threshold(self) -> list:
         population = []
         time = 0
-        
+
         with Bar('Generating random population', max=self._MAXPOP, fill='#') as bar:
             while len(population) < self._MAXPOP:
                 ruleset = self.gen_rrs()
                 action = self.majority(self.propagate(ruleset, self._RADIUS, self.observe_alternate()))
                 self.observation, reward, terminated, truncated, info = self.env.step(action)
                 time += reward
-                
+
                 if terminated or truncated:
                     if time > self._RANDOM_THRESHOLD_SIZE:
                         population.append([ruleset, time])
@@ -125,7 +123,7 @@ class CA:
 
     def gen_pop(self) -> list:
         population = []
-        
+
         for _ in range(self._MAXPOP):
             population.append([self.gen_rrs(), 0])
 
@@ -246,7 +244,7 @@ class CA:
                 0 (left)
                 1 (right)
         '''
-        
+
         ones = bitstring.count('1')
         zeros = bitstring.count('0')
 
@@ -259,13 +257,13 @@ class CA:
     def gen_rrs(self) -> str:
         ''' 
             Generates a random ruleset based on the amount of neighbours.
-            
+
             Returns: random bitsting within range (str)
         '''
         subst_size = (self._RADIUS * 2) + 1
         max_substr = 2 ** subst_size
         max_rules = (2 ** max_substr) - 1 # max 255
-        
+
         rrs_dec = random.randrange(0, max_rules) # 140   10001100
         rrs_bit = format(rrs_dec, "b").zfill(max_substr)
 
