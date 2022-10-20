@@ -59,13 +59,17 @@ class CA:
             population = self.gen_pop()
 
         while True: # maybe need something better, some evolve threshold maybe to end the evolution cycle
+            # reset values
+            fitness_ave = 0
             # Evolve all rulesets in the population
             population = self.ga_env.overlapping_model(population)
 
             # Test the whole population x (self._TESTS) amount of times
             for i in range(len(population)):
                 population[i][1] = 0
+                # all tests
                 for _ in range(self._TESTS):
+                    # current test
                     while True:
                         action = self.majority(self.propagate(population[i][0], self._RADIUS, self.observe_alternate()))
                         self.observation, reward, terminated, truncated, info = self.env.step(action)
@@ -79,14 +83,13 @@ class CA:
                             else:
                                 self.observation, info = self.env.reset()
                             break
-                        
-            fitness_ave = 0
-            # Sum of fitness averages of all individuals
-            for guy in population:
-                guy[1] /= self._TESTS
-                fitness_ave += guy[1]
+                    # /current test
+                # /all tests
+                population[i][1] /= self._TESTS
+                fitness_ave += population[i][1]
+            # /test whole population
 
-            # Print batch info (fitness average, fitness max, best ruleset) 
+            # Print generation info (fitness average, fitness max, best ruleset) 
             gen += 1
             best_genome = max(population, key=lambda x: x[1])
             fitness_ave /= len(population)
@@ -122,7 +125,7 @@ class CA:
     def gen_pop(self) -> list:
         population = []
         
-        for i in range(self._MAXPOP):
+        for _ in range(self._MAXPOP):
             population.append([self.gen_rrs(), 0])
 
         return population
