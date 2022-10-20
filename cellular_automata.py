@@ -19,11 +19,11 @@ class CA:
         # Config stuff
         self._MAXPOP = 100                  # 100 maximum amount of rules of the first random population
         self._RADIUS = 2                    # 2 neighbours = radius*2
-        self._ENABLE_THRESHOLD = False       # random search with (False) or without threshold (True)
+        self._ENABLE_THRESHOLD = False      # random search with (False) or without threshold (True)
         self._RANDOM_THRESHOLD_SIZE = 30    # threshold for genome to be accepted
-        self._ENABLE_SEED = False           # set specific seed
+        self._ENABLE_SEED = True            # set specific seed
         self._SEED = 42                     # 42 seed for initial env.reset()
-        self._TESTS = 3                     # how many times to test evolved rules before evolving again
+        self._TESTS = 1                     # how many times to test evolved rules before evolving again
 
         # observation parameters
         self.resolution = 20                # bitstring size for each observation
@@ -64,8 +64,9 @@ class CA:
             population = self.ga_env.overlapping_model(population)
 
             # Test the whole population x (self._TESTS) amount of times
-            for _ in range(self._TESTS):
-                for i in range(len(population)):
+            for i in range(len(population)):
+                population[i][1] = 0
+                for _ in range(self._TESTS):
                     while True:
                         action = self.majority(self.propagate(population[i][0], self._RADIUS, self.observe()))
                         self.observation, reward, terminated, truncated, info = self.env.step(action)
@@ -174,6 +175,16 @@ class CA:
         
         return observation_ca
 
+    # alternative method for building the observation CA
+    def observe_alternate(self) -> str:
+        observation_ca = ""
+
+        for _ in range(self.space_between_observations):
+            observation_ca += "0"
+
+        
+
+        return observation_ca
 
     def propagate(self, ruleset: str, radius: int, initial_values: str) -> str:
         '''

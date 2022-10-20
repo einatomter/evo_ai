@@ -77,11 +77,7 @@ class GA:
         population_new = self.uniform(population_new, self._MAXPOP-1)
         population_new.append(self.truncation(population, 1)[0])
 
-        # reset fitness score
-        for individual in population_new:
-            individual[1] = 0
-
-        return population_new      
+        return population_new
 
     def truncation(self, population: list, n: int) -> list:
         '''
