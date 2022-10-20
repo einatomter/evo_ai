@@ -1,5 +1,7 @@
 import numpy as np
 
+import pandas as pd
+
 
 test_list = [['a', 7],
              ['b', 1],
@@ -115,19 +117,19 @@ def CA_propagate(ruleset: str, radius: int, initial_values: str) -> str:
 # print()
 # print(ca)
 
-dec_angle = 0.42
+# dec_angle = 0.42
 
-min_angle = -0.42
-max_angle = 0.42
-resolution = 10
+# min_angle = -0.42
+# max_angle = 0.42
+# resolution = 10
 
-dec_angle = round(np.interp(dec_angle, [min_angle, max_angle], [0, 2**resolution - 1]))
-print(dec_angle)
+# dec_angle = round(np.interp(dec_angle, [min_angle, max_angle], [0, 2**resolution - 1]))
+# print(dec_angle)
 
-bin_angle = format(dec_angle, "b")
-bin_angle = bin_angle.zfill(resolution)
+# bin_angle = format(dec_angle, "b")
+# bin_angle = bin_angle.zfill(resolution)
 
-print(bin_angle)
+# print(bin_angle)
 
 # result = truncation(test_list, 2)
 
@@ -137,3 +139,27 @@ print(bin_angle)
 # print(type(bit_flip("0")))
 
 # print(n_point_crossover2("1234", "00006", [2, 3]))
+
+min_angle = -0.2095
+max_angle = 0.2095
+resolution = 20
+
+# print(intervals)
+
+# # print(list)
+# bins_angle = pd.cut([min_angle, max_angle], resolution, retbins = True)
+# print(bins_angle)
+# # print(pd.value_counts(bins_angle))
+
+intervals = np.linspace(min_angle, max_angle+0.1*max_angle, 20)
+
+observation = 0.1
+
+bin_observation = ""
+for i in range(len(intervals)-1):
+    if observation >= intervals[i] and observation < intervals[i+1]:
+        bin_observation += "1"
+    else:
+        bin_observation += "0"
+
+print(bin_observation)

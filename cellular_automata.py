@@ -3,7 +3,6 @@
 from ctypes import sizeof
 import gym
 import numpy as np
-import pandas as pd
 import random
 from progress.bar import Bar
 from evo_alg import GA
@@ -23,7 +22,7 @@ class CA:
         self._RANDOM_THRESHOLD_SIZE = 30    # threshold for genome to be accepted
         self._ENABLE_SEED = True            # set specific seed
         self._SEED = 42                     # 42 seed for initial env.reset()
-        self._TESTS = 3                     # how many times to test evolved rules before evolving again
+        self._TESTS = 1                     # how many times to test evolved rules before evolving again
 
         # observation parameters
         self.resolution = 20                # bitstring size for each observation
@@ -68,7 +67,7 @@ class CA:
                 population[i][1] = 0
                 for _ in range(self._TESTS):
                     while True:
-                        action = self.majority(self.propagate(population[i][0], self._RADIUS, self.observe()))
+                        action = self.majority(self.propagate(population[i][0], self._RADIUS, self.observe_alternate()))
                         self.observation, reward, terminated, truncated, info = self.env.step(action)
                         time += reward
 
@@ -103,7 +102,7 @@ class CA:
         with Bar('Generating random population', max=self._MAXPOP, fill='#') as bar:
             while len(population) < self._MAXPOP:
                 ruleset = self.gen_rrs()
-                action = self.majority(self.propagate(ruleset, self._RADIUS, self.observe()))
+                action = self.majority(self.propagate(ruleset, self._RADIUS, self.observe_alternate()))
                 self.observation, reward, terminated, truncated, info = self.env.step(action)
                 time += reward
                 
@@ -132,8 +131,7 @@ class CA:
     def observe(self) -> str:
         observation_ca = ""
 
-        for _ in range(self.space_between_observations):
-            observation_ca += "0"
+        observation_ca += self.add_zeroes(self.space_between_observations)
 
         dec_position = self.observation[0]
         dec_position = round(np.interp(dec_position, [self.min_position, self.max_position],
@@ -142,8 +140,7 @@ class CA:
         bin_position = bin_position.zfill(self.resolution)
 
         observation_ca += bin_position
-        for _ in range(self.space_between_observations):
-            observation_ca += "0"
+        observation_ca += self.add_zeroes(self.space_between_observations)
 
         dec_velocity = self.observation[1]
         dec_velocity = round(np.interp(dec_velocity, [self.min_velocity, self.max_velocity],
@@ -152,8 +149,7 @@ class CA:
         bin_velocity = bin_velocity.zfill(self.resolution)
 
         observation_ca += bin_velocity
-        for _ in range(self.space_between_observations):
-            observation_ca += "0"
+        observation_ca += self.add_zeroes(self.space_between_observations)
 
         dec_angle = self.observation[2]
         dec_angle = round(np.interp(dec_angle, [self.min_angle, self.max_angle],
@@ -162,8 +158,7 @@ class CA:
         bin_angle = bin_angle.zfill(self.resolution)
 
         observation_ca += bin_angle
-        for _ in range(self.space_between_observations):
-            observation_ca += "0"
+        observation_ca += self.add_zeroes(self.space_between_observations)
 
         dec_ang_velocity = self.observation[3]
         dec_ang_velocity = round(np.interp(dec_ang_velocity, [self.min_ang_velocity, self.max_ang_velocity],
@@ -178,11 +173,27 @@ class CA:
     # alternative method for building the observation CA
     def observe_alternate(self) -> str:
         observation_ca = ""
+        observation_ca += self.add_zeroes(self.space_between_observations)
 
-        for _ in range(self.space_between_observations):
-            observation_ca += "0"
+        # position observation
+        bin_position = self.binary_bin(self.observation[0], self.min_position, self.max_position, self.resolution)
+        observation_ca += bin_position
+        observation_ca += self.add_zeroes(self.space_between_observations)
 
-        
+        # velocity observation
+        bin_velocity = self.binary_bin(self.observation[1], self.min_velocity, self.max_velocity, self.resolution)
+        observation_ca += bin_velocity
+        observation_ca += self.add_zeroes(self.space_between_observations)
+
+        # angle observation
+        bin_angle = self.binary_bin(self.observation[2], self.min_angle, self.max_angle, self.resolution)
+        observation_ca += bin_angle
+        observation_ca += self.add_zeroes(self.space_between_observations)
+
+        # angular velocity observation
+        bin_ang_velocity = self.binary_bin(self.observation[3], self.min_ang_velocity, self.max_ang_velocity, self.resolution)
+        observation_ca += bin_ang_velocity
+        observation_ca += self.add_zeroes(self.space_between_observations)
 
         return observation_ca
 
@@ -255,6 +266,42 @@ class CA:
         rrs_bit = format(rrs_dec, "b").zfill(max_substr)
 
         return rrs_bit
+
+    @staticmethod
+    def binary_bin(x: float, min: float, max: float, resolution: int) -> str:
+        '''
+            Creates equally sized bins and puts x within corresponding bin.
+            Bin with x equals 1, the rest of the values equal 0
+
+            Input:
+                x: value to be evaluated
+                min: minimum interval value
+                max: maximum interval value
+                resolution: number of intervals
+            Returns:
+                binary string of binned result
+        '''
+
+        intervals = np.linspace(min, max+0.1*max, resolution)
+
+        bin_x = ""
+        for i in range(len(intervals)-1):
+            if x >= intervals[i] and x < intervals[i+1]:
+                bin_x += "1"
+            else:
+                bin_x += "0"
+
+        return bin_x
+
+    @staticmethod
+    def add_zeroes(n: int) -> str:
+        '''
+            returns a string of n zeroes
+        '''
+        str_zeroes = ""
+        for _ in range(n):
+            str_zeroes += "0"
+        return str_zeroes
 
     @staticmethod
     def print_info(gen, fitness_ave, best_genome):
