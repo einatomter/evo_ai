@@ -17,6 +17,7 @@ from yaml.loader import SafeLoader
 class CA:
     def __init__(self) -> None:
         # Config stuff
+<<<<<<< HEAD
         self._MAXPOP = 100                  # 100 maximum amount of rules of the first random population
         self._RADIUS = 2                    # 2 neighbours = radius*2
         self._ENABLE_THRESHOLD = False       # random search with (False) or without threshold (True)
@@ -36,11 +37,20 @@ class CA:
         self.max_angle = 0.2095
         self.min_ang_velocity = -2
         self.max_ang_velocity = 2
+=======
+        self._MAXPOP = 100 #100 maximum amount of rules of the first random population
+        self._RADIUS = 2 #2  neighbours = radius*2
+        self._ENABLE_THRESHOLD = False # random search with (False) or without threshold (True)
+        self._RANDOM_THRESHOLD_SIZE = 30
+        self._ENABLE_SEED = True
+        self._SEED = 42 #42 seed for initial env.reset()
+        self._TESTS = 1 # how many times to test evolved rules before evolving again
+>>>>>>> main
 
         # env = gym.make("CartPole-v1", render_mode="human")
         self.env = gym.make("CartPole-v1")
         if self._ENABLE_SEED:
-            self.observation, info = self.env.reset(self._SEED)
+            self.observation, info = self.env.reset(seed = self._SEED)
         else:
             self.observation, info = self.env.reset()
 
@@ -75,7 +85,7 @@ class CA:
                             population[i][1] += time
                             time = 0
                             if self._ENABLE_SEED:
-                                self.observation, info = self.env.reset(self._SEED)
+                                self.observation, info = self.env.reset(seed = self._SEED)
                             else:
                                 self.observation, info = self.env.reset()
                             break
@@ -112,7 +122,7 @@ class CA:
                         bar.next()
                     time = 0
                     if self._ENABLE_SEED:
-                        self.observation, info = self.env.reset(self._SEED)
+                        self.observation, info = self.env.reset(seed = self._SEED)
                     else:
                         self.observation, info = self.env.reset()
 

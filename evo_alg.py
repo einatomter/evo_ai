@@ -72,8 +72,14 @@ class GA:
         # print(f'new population:')
         # for i in population_new:
         #     print(i)
+
         population_new.extend(parents)
-        population_new = self.uniform(population_new, self._MAXPOP)
+        population_new = self.uniform(population_new, self._MAXPOP-1)
+        population_new.append(self.truncation(population, 1)[0])
+
+        # reset fitness score
+        for individual in population_new:
+            individual[1] = 0
 
         return population_new      
 
