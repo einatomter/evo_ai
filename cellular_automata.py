@@ -6,7 +6,7 @@ import numpy as np
 import random
 from progress.bar import Bar
 from evo_alg import GA
-
+import csv
 
 # for writing yaml configs
 import yaml
@@ -44,8 +44,8 @@ class CA:
             self.observation, info = self.env.reset()
 
         self.ga_env = GA(self._MAXPOP)
-
-
+        
+        
     def CA_run(self):
         population = []
         time = 0
@@ -65,6 +65,7 @@ class CA:
 
             # Test the whole population x (self._TESTS) amount of times
             for i in range(len(population)):
+                # rest fitness scores of the whole population
                 population[i][1] = 0
                 # all tests
                 for _ in range(self._TESTS):
@@ -93,9 +94,29 @@ class CA:
             best_genome = max(population, key=lambda x: x[1])
             fitness_ave /= len(population)
             self.print_info(gen, fitness_ave, best_genome)
+            self.plot_data(gen, fitness_ave, best_genome[1])
 
         #self.env.close() this thing wants to close stuff but not with WHILE TRU :D
 
+
+    def write_file(self):
+        self.fieldnames = ["generation", "average_fitness", "max_fitness"]
+
+        with open('log.csv', 'w', newline='') as csv_file:
+            csv_writer = csv.DictWriter(csv_file, fieldnames=self.fieldnames)
+            csv_writer.writeheader()
+        
+
+    def plot_data(self, gen, ave, max):
+        with open('log.csv', 'a', newline='') as csv_file:
+            csv_writer = csv.DictWriter(csv_file, fieldnames=self.fieldnames)
+
+            info = {
+                "generation": gen,
+                "average_fitness": ave,
+                "max_fitness": max
+            }
+            csv_writer.writerow(info)
 
     def gen_pop_with_threshold(self) -> list:
         population = []
