@@ -100,7 +100,13 @@ class CA:
         #self.env.close() this thing wants to close stuff but not with WHILE TRU :D
 
 
-    def write_file(self):
+    def write_file(self) -> str:
+        '''
+            Creates a log file with timestamp in its name.
+            Writes a string of some of the current parameters and a header of the 3 data points.
+            Returns str of the logfile name for plot_fitness.py
+            
+        '''
         self.fieldnames = ["generation", "average_fitness", "max_fitness"]
         self.logfilename = "log" + str(datetime.now().strftime("%d-%m-%Y_%H_%M_%S.%f")) + ".csv"
 
@@ -115,6 +121,10 @@ class CA:
         
 
     def plot_data(self, gen, ave, max):
+        '''
+            Appeds a row consisting of 3 points of data.
+        
+        '''
         with open(self.logfilename, 'a', newline='') as csv_file:
             csv_writer = csv.DictWriter(csv_file, fieldnames=self.fieldnames)
 
