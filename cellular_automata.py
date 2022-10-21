@@ -7,6 +7,7 @@ import random
 from progress.bar import Bar
 from evo_alg import GA
 import csv
+from datetime import datetime
 
 # for writing yaml configs
 import yaml
@@ -101,14 +102,20 @@ class CA:
 
     def write_file(self):
         self.fieldnames = ["generation", "average_fitness", "max_fitness"]
+        self.logfilename = "log" + str(datetime.now().strftime("%d-%m-%Y_%H_%M_%S.%f")) + ".csv"
 
-        with open('log.csv', 'w', newline='') as csv_file:
+        with open(self.logfilename, 'w', newline='') as csv_file:
+            csv_writer = csv.writer(csv_file)
+            csv_writer.writerow([f"Radius: {self._RADIUS}, Resolution: {self.resolution}, Tests: {self._TESTS}, Velocity: {self.max_velocity}, Position: {self.max_position}, Ang velocity: {self.max_ang_velocity}"])
+
             csv_writer = csv.DictWriter(csv_file, fieldnames=self.fieldnames)
             csv_writer.writeheader()
+
+        return self.logfilename
         
 
     def plot_data(self, gen, ave, max):
-        with open('log.csv', 'a', newline='') as csv_file:
+        with open(self.logfilename, 'a', newline='') as csv_file:
             csv_writer = csv.DictWriter(csv_file, fieldnames=self.fieldnames)
 
             info = {

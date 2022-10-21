@@ -3,6 +3,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+import sys
 
 
     
@@ -12,20 +13,20 @@ x_vals = []
 y_vals = []
 
 def animate(i):
-    data = pd.read_csv('log.csv')
+    data = pd.read_csv(sys.argv[1], skiprows=1)
     x = data['generation']
     y1 = data['average_fitness']
     y2 = data['max_fitness']
 
     plt.cla()
 
-    plt.plot(x, y1, label='Average_fitness')
-    plt.plot(x, y2, label='Max fitness')
+    plt.plot(x, y1, lw = 1, label='Average_fitness')
+    plt.plot(x, y2, lw = 1, label='Max fitness')
 
-    plt.xlabel("Generations")
-    plt.ylabel("Fitness score")
+    plt.xlabel("Generations", fontsize = "small")
+    plt.ylabel("Fitness score", fontsize = "small")
 
-    plt.legend(loc='upper left')
+    plt.legend(loc='upper left', fontsize = "small")
     plt.tight_layout()
 
 

@@ -11,6 +11,5 @@ if len(sys.argv) > 1:
 else:
     env = gym.make("CartPole-v1")
     ca = CA(env)
-    ca.write_file()
-    subprocess.Popen(['python', 'plot_fitness.py'])
+    subprocess.Popen(['python', 'plot_fitness.py', ca.write_file()])
     ca.CA_run()
