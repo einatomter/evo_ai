@@ -290,14 +290,20 @@ class CA:
 
         return rrs_bit
 
-    def CA_play(self):
+    def CA_play(self, genome: str):
         time = 0
         average_time = 0
         tests = 50
-        print(self._GENOME)
+
+        if len(genome) == 128:
+            self._RADIUS = 3
+        elif len(genome) == 32:
+            self._RADIUS = 2
+
+        print(genome)
         for _ in range(tests):
             while True:
-                action = self.majority(self.propagate(self._GENOME, self._RADIUS, self.observe_alternate()))
+                action = self.majority(self.propagate(genome, self._RADIUS, self.observe_alternate()))
                 self.observation, reward, terminated, truncated, info = self.env.step(action)
                 time += reward
 
