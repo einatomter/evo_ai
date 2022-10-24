@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-from ctypes import sizeof
-import gym
 import numpy as np
 import random
 from progress.bar import Bar
@@ -61,12 +59,10 @@ class CA:
         while True: # maybe need something better, some evolve threshold maybe to end the evolution cycle
             # reset values
             fitness_ave = 0
-            # Evolve all rulesets in the population
-            population = self.ga_env.overlapping_model(population)
 
             # Test the whole population x (self._TESTS) amount of times
             for i in range(len(population)):
-                # rest fitness scores of the whole population
+                # reset fitness scores of the whole population
                 population[i][1] = 0
                 # all tests
                 for _ in range(self._TESTS):
@@ -89,6 +85,8 @@ class CA:
                 population[i][1] /= self._TESTS
                 fitness_ave += population[i][1]
             # /test whole population
+            # Evolve all rulesets in the population
+            population = self.ga_env.overlapping_model(population)
 
             # Print generation info (fitness average, fitness max, best ruleset) 
             gen += 1
