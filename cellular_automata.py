@@ -82,18 +82,19 @@ class CA:
                             break
                     # /current test
                 # /all tests
-                population[i][1] /= self._TESTS
+                population[i][1] = population[i][1] / self._TESTS 
                 fitness_ave += population[i][1]
             # /test whole population
-            # Evolve all rulesets in the population
-            population = self.ga_env.overlapping_model(population)
-
+           
             # Print generation info (fitness average, fitness max, best ruleset) 
             gen += 1
             best_genome = max(population, key=lambda x: x[1])
             fitness_ave /= len(population)
             self.print_info(gen, fitness_ave, best_genome)
             self.plot_data(gen, fitness_ave, best_genome[1])
+
+             # Evolve all rulesets in the population
+            population = self.ga_env.overlapping_model(population)
 
         #self.env.close() this thing wants to close stuff but not with WHILE TRU :D
 
@@ -374,6 +375,6 @@ class CA:
     def print_info(gen, fitness_ave, best_genome):
         print(f'gen:\t{gen}\t', end='')
         print(f'fitness ave:\t{fitness_ave:.2f}\t', end='')
-        print(f'fitness max:\t{best_genome[1]:.2f}\t', end='')
+        print(f'fitness max:\t{best_genome[1]}\t', end='')
         print(f'genome:\t{best_genome[0]}\t', end='')
         print()
