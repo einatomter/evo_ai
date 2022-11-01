@@ -5,19 +5,22 @@ import random
 from evo_alg import GA
 
 class ANN:
-    def __init__(self, max_pop = 10, random_start = True):
+    def __init__(self):
+        # Default values.
+        # It is recommended to change parameters through the
+        # config yaml file and load it through main.
+
         # Config stuff
-        self._MAXPOP = max_pop
         self._GA = GA("ann")
 
-        self.random_start = random_start    # boolean
-        self.rand_range = 3                 # range of values if random start is enabled
-
         # evolution parameters
-        self.uniform_val = round(self._MAXPOP * 0.5)    # percentage of uniform selection
-        self.trunc_val = round(self._MAXPOP * 0.2)      # percentage of truncation selection
-        self.p = 0.04                                   # mutation probability
-        self.lr = 0.2                                   # learning rate
+        self.random_start = False                       # boolean
+        self.rand_range = 3                             # range of values if random start is enabled
+        self.max_pop = 10
+        self.uniform_val = round(self.max_pop * 0.5)    # percentage of uniform selection
+        self.trunc_val = round(self.max_pop * 0.2)      # percentage of truncation selection
+        self.mutation_val = 0.04                        # mutation rate
+        self.learning_rate = 0.2                        # learning rate
 
 
 
@@ -31,7 +34,7 @@ class ANN:
 
         population = []
 
-        for _ in range(self._MAXPOP):
+        for _ in range(self.max_pop):
             if self.random_start:
                 population.append([self.rand_range * 2 * np.random.random((4,)) -self.rand_range, 0])
             else:
@@ -68,23 +71,40 @@ class ANN:
 
         parents = self._GA.tournament(population, self.uniform_val, self.trunc_val)
         
-        while(len(population_new) < self._MAXPOP):
+        while(len(population_new) < self.max_pop):
             parent1, fitness = random.choice(parents)
             parent2, fitness = random.choice(parents)
 
             offspring = self._GA.n_point_crossover(parent1, parent2, [round(len(parent1)/2)])
             for individual in offspring:
-                individual = self._GA.mutation(individual, self.p, self.lr)
+                individual = self._GA.mutation(individual, self.mutation_val, self.learning_rate)
                 population_new.append([individual, 0])
 
         # add parents
         population_new.extend(parents)
-        population_new = self._GA.uniform(population_new, self._MAXPOP-1)
+        population_new = self._GA.uniform(population_new, self.max_pop-1)
         population_new.append(self._GA.truncation(population, 1)[0])
 
         return population_new
 
+    def parse_parameters(self, params: dict):
+        '''
+        Parses and sets parameters.
+        '''
 
+        print("Parsing evolutionary parameters")
+
+        try:
+            self.max_pop = params["max_pop"]
+            self.random_start = params["random_start"]
+            self.rand_range = params["random_range"]
+            self.uniform_val = round(params["uniform_percentage"] * self.max_pop)
+            self.trunc_val = round(params["truncation_percentage"] * self.max_pop)
+            self.mutation_val = params["mutation_rate"]
+            self.learning_rate = params["learning_rate"]
+
+        except:
+            print("Error in parsing ANN parameters, reverting to default values")
 
     # HELPER FUNCTIONS
 

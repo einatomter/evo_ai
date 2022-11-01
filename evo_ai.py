@@ -4,20 +4,29 @@ import gym
 import csv
 from datetime import datetime
 
+import yaml
+from yaml.loader import SafeLoader
+
 from cellular_automata import CA
 from ann import ANN
 
 class Evo_AI:
     def __init__(self, model_type: str, env):
+        # Default values.
+        # It is recommended to change parameters through the
+        # config yaml file and load it through main.
         
-        # parameters                    # format: default, param info
+        # general parameters            # format: default, param info
         self.model_type = model_type    # ca, ann
         self.env = env
+
+        # testing parameters
+        self.genome = None
+        self.iterations = 50
 
         # learning parameters
         self._ENABLE_SEED = False       # set specific seed
         self._SEED = 42                 # 42 seed for initial env.reset()
-        self._MAX_POP = 100             # ca = 100, ann = 10, population count
         self._TESTS = 4                 # 4
         self._GEN_MAX = -1              # 100, -1 removes limit
         self.init_model(model_type)
@@ -32,24 +41,21 @@ class Evo_AI:
 
         elif model_type == "ann":
             print("--- Building ANN model ---")
-            self.model = ANN(random_start = True)
+            self.model = ANN()
 
         else:
             print("ERROR: Unknown model, exiting...")
             exit()
 
-    def test(self, genome, tests = 50):
+    def test(self):
         '''
         Test a specific genome.
         Genome must match model used.
-        
-        Input:
-            genome: genome to be tested
-            tests: number of test iterations
         '''
         print("Running test")
 
-        print(f'Genome: {genome}')
+        print(f'Genome: {self.genome}')
+        print(f'Iterations: {self.iterations}')
         time = 0
         time_total = 0
 
@@ -57,12 +63,12 @@ class Evo_AI:
         observation, info = self.env_reset()
 
         print("Initialization successful. Running main loop")
-        for i in range(tests):
+        for i in range(self.iterations):
             while True:
                 # convert observations to model-specific format
                 observation_formatted = self.model.format_observation(observation)
                 # feed observations to model
-                action = self.model.determine_action(genome, observation_formatted)
+                action = self.model.determine_action(self.genome, observation_formatted)
 
                 observation, reward, terminated, truncated, info = self.env.step(action)
                 time += reward
@@ -71,13 +77,13 @@ class Evo_AI:
                     break
 
             # test loop done
-            print(f"Test: {i} \tTime: {time}")
+            print(f"Test: {i+1} \tTime: {time}")
             time_total += time
             time = 0
             observation, info = self.env_reset()
 
         # test count reached
-        print(f"Average time: {time_total/tests}")
+        print(f"Average time: {time_total/self.iterations}")
         self.env.close()        
 
 
@@ -169,6 +175,43 @@ class Evo_AI:
     #         csv_writer.writerow([gen]+[ave]+[max] + all_individuals)
 
 
+    def parse_yaml(self, file_path: str):
+        '''
+        Parse yaml file containing parameters.
+        '''
+
+        print(f"Parsing yaml file: {file_path}")
+        with open(file_path) as f:
+            data = yaml.load(f, Loader = SafeLoader)
+
+            params_test = data["test"]
+            params_learn = data["learn"]
+            params_evo = data["evolution"]
+
+            self.parse_parameters(params_test, params_learn)
+            self.model.parse_parameters(params_evo)
+
+    def parse_parameters(self, params_test: dict, params_learn: dict):
+        '''
+        Parses parameters and sets respective values
+        '''
+        # set test parameters
+        try:
+            self.genome = params_test["genome"]
+            self.iterations = params_test["iterations"]
+        except:
+            print("No test parameters found")
+
+        # set learn parameters
+        try:
+            self._ENABLE_SEED = params_learn["enable_seed"]
+            self._SEED = params_learn["seed"]
+            self._TESTS = params_learn["tests"]
+            self._GEN_MAX = params_learn["gen_max"]
+        except:
+            print("No learning parameters found")
+
+
     # HELPER FUNCTIONS
 
     def env_reset(self):
@@ -197,9 +240,10 @@ def main():
     env = gym.make("CartPole-v1")
     # ai_model = Evo_AI("ca", env)
     ai_model = Evo_AI("ca", env)
-    ai_model.learn()
-    # ai_model.test(genome = "11100001100010011011100010101100")
-    # ai_model.test(genome = [0.03038473385456536, 0.6207902125992215, 1.4053989519326353, 2.630300372623971])
+    ai_model.parse_yaml("config_ca.yaml")
+    # ai_model.learn()
+    # ai_model.test()
+    ai_model.test()
 
 if __name__ == "__main__":
     main()

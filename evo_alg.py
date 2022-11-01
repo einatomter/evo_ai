@@ -10,10 +10,13 @@ class GA:
     def __init__(self, model) -> None:
         self.model = model
 
+    # MAIN FUNCTIONS
+
     def truncation(self, population: list, n: int) -> list:
         '''
-        Returns list of n best individuals
+        Returns n percent of best individuals
         '''
+
         chosen = []
         population = sorted(population, key=lambda x: x[1], reverse=1)
         
@@ -24,16 +27,18 @@ class GA:
 
     def uniform(self, population: list, n: int) -> list:
         '''
-        Returns n amount of individuals from population
+        Returns n percent of individuals from population
         '''
-        
         individual = random.sample(population, n)
 
         return individual
 
-    def tournament(self, population: list, n: int, m: int) -> list:
+    def tournament(self, population: list, n: float, m: float) -> list:
         '''
-        Returns m amount of best individuals from n size list of randomly picked individuals
+        Performs tournament selection from population.
+        Population is first uniformly selected to size n.
+        Truncation is then performed to size m.
+        Returns truncated population.
         '''
 
         n_population = self.uniform(population, n)
@@ -55,7 +60,7 @@ class GA:
         elif self.model == "ann":
             return self.mutation_ann(parent, p, lr)
 
-    def n_point_crossover(self, parent1, parent2, cut_points: list) -> str:
+    def n_point_crossover(self, parent1, parent2, cut_points: list) -> list:
         '''
         Performs nonvariable length crossover at specified cut points
         '''
@@ -75,7 +80,7 @@ class GA:
 
         return [offspring1, offspring2]
 
-    def uniform_crossover(self, parent1, parent2, p: int) -> str:
+    def uniform_crossover(self, parent1, parent2, p: int) -> list:
         '''
         Performs crossover with probability p for genes to be copied from the opposite parent.
         '''
@@ -91,8 +96,10 @@ class GA:
                 offspring1.append(parent2[i])
                 offspring2.append(parent1[i])
         
-        return offspring1, offspring2
+        return [offspring1, offspring2]
 
+
+    # HELPER FUNCTIONS
 
     def mutation_ca(self, parent: str, p: int) -> str:
         '''

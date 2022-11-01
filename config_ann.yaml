@@ -1,0 +1,27 @@
+---
+  # test parameters
+  # NOTE: radius and observation parameters need to match genome being tested.
+  test:
+    genome: [0.03038473385456536, 0.6207902125992215, 1.4053989519326353, 2.630300372623971]
+    iterations: 10
+
+  # learning parameters
+  learn:
+    enable_seed: False          # set static seed or not
+    seed: 42                    # seed value if seed is enabled
+    tests: 4                    # number of tests per individual
+    gen_max: 100                # number of generations before learning stops
+                                # set to -1 to remove limit
+
+  # evolution parameters
+  evolution:
+    max_pop: 10
+    random_start: True          # randomize starter values
+                                # all weights set to 0 if false
+    random_range: 3             # range of values if random start is enabled
+    uniform_percentage: 0.5     # percentage of population to keep after uniform selection
+    truncation_percentage: 0.2  # percentage of population to keep after truncation selection
+                                # truncation percentage needs to be lower than uniform percentage
+    mutation_rate: 0.04         # mutation rate
+    learning_rate: 0.2          # learning rate
+...

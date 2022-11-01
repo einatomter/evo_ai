@@ -5,16 +5,20 @@ import random
 from evo_alg import GA
 
 class CA:
-    def __init__(self, max_pop = 100):
+    def __init__(self):
+        # Default values.
+        # It is recommended to change parameters through the
+        # config yaml file and load it through main.
+
         # Config stuff
-        self._MAXPOP = max_pop             
-        self._RADIUS = 2            # 2 neighbours = radius*2
         self._GA = GA("ca")
 
         # evolution parameters
-        self.uniform_val = round(self._MAXPOP * 0.5)    # percentage of uniform selection
-        self.trunc_val = round(self._MAXPOP * 0.2)      # percentage of truncation selection
-        self.p = 0.04                                   # mutation probability
+        self.max_pop = 100             
+        self.radius = 2                                 # 2 neighbours = radius*2
+        self.uniform_val = round(self.max_pop * 0.5)    # uniform selection
+        self.trunc_val = round(self.max_pop * 0.2)      # truncation selection
+        self.mutation_val = 0.04                        # mutation probability
         
         # observation parameters
         self.resolution = 10                    # bitstring size for each observation
@@ -40,7 +44,7 @@ class CA:
 
         population = []
 
-        for _ in range(self._MAXPOP):
+        for _ in range(self.max_pop):
             population.append([self.gen_rrs(), 0])
 
         return population
@@ -61,10 +65,8 @@ class CA:
         Returns a boolean output.
         '''
 
-        final_ca = self.propagate(genome, self._RADIUS, ca)
+        final_ca = self.propagate(genome, self.radius, ca)
         return self.majority(final_ca)
-
-    # EVOLUTION
 
     def evolve(self, population) -> list:
         '''
@@ -74,7 +76,35 @@ class CA:
 
         return self.evolve_overlap(population)
 
+    def parse_parameters(self, params: dict):
+        '''
+        Parses and sets parameters.
+        '''
 
+        print("Parsing evolutionary parameters")
+
+        try:
+            self.max_pop = params["max_pop"]
+            self.radius = params["radius"]
+            self.uniform_val = round(params["uniform_percentage"] * self.max_pop)
+            self.trunc_val = round(params["truncation_percentage"] * self.max_pop)
+            self.mutation_val = params["mutation_rate"]
+
+            # observation parameters
+            params_obs = params["observation"]
+            self.resolution = params_obs["resolution"]
+            self.space_between_observations = params_obs["space"]
+            self.min_position = params_obs["min_position"]
+            self.max_position = params_obs["max_position"]
+            self.min_velocity = params_obs["min_velocity"]
+            self.max_velocity = params_obs["max_velocity"]
+            self.min_angle = params_obs["min_angle"]
+            self.max_angle = params_obs["max_angle"]
+            self.min_ang_velocity = params_obs["min_ang_velocity"]
+            self.max_ang_velocity = params_obs["max_ang_velocity"]
+
+        except:
+            print("Error in parsing CA parameters, reverting to default values")
 
     # HELPER FUNCTIONS
 
@@ -83,7 +113,7 @@ class CA:
         Generates a random ruleset based on the amount of neighbours.
         Returns: random bitstring within range (str)
         '''
-        subst_size = (self._RADIUS * 2) + 1
+        subst_size = (self.radius * 2) + 1
         max_substr = 2 ** subst_size
         max_rules = (2 ** max_substr) - 1 # max 255
 
@@ -281,7 +311,7 @@ class CA:
         parents = self._GA.tournament(population, self.uniform_val, self.trunc_val)
 
         # 2. reproduction
-        while(len(population_new) < self._MAXPOP):
+        while(len(population_new) < self.max_pop):
 
             parent1, fitness = random.choice(parents)
             parent2, fitness = random.choice(parents)
@@ -289,7 +319,7 @@ class CA:
             offspring = self._GA.n_point_crossover(parent1, parent2, [round(len(parent1)/2)])
             for individual in offspring:
                 individual = self._GA.list_to_string(individual)
-                individual = self._GA.mutation(individual, self.p)
+                individual = self._GA.mutation(individual, self.mutation_val)
                 population_new.append([individual, 0])
 
         # print(f'new population:')
@@ -299,7 +329,7 @@ class CA:
         # add parents to population
         population_new.extend(parents)
         # uniform selection of new population until count matches old population
-        population_new = self._GA.uniform(population_new, self._MAXPOP-1)
+        population_new = self._GA.uniform(population_new, self.max_pop-1)
         # append best individual from previous generation
         population_new.append(self._GA.truncation(population, 1)[0])
 
@@ -318,10 +348,10 @@ class CA:
         population_new = []
 
         # 1. choose individuals
-        chosen_ones = self._GA.tournament(population, round(self._MAXPOP * 0.5), 20)
+        chosen_ones = self._GA.tournament(population, self.uniform_val, self.trunc_val)
 
         # 2. reproduction
-        while(len(population_new) < self._MAXPOP):   
+        while(len(population_new) < self.max_pop):   
 
             parent1, fitness = random.choice(chosen_ones)
             parent2, fitness = random.choice(chosen_ones)
