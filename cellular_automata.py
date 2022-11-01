@@ -43,6 +43,7 @@ class CA:
             self.observation, info = self.env.reset()
 
         self.ga_env = GA(self._MAXPOP)
+        self.write_file()
         
         
     def CA_run(self):
@@ -91,7 +92,7 @@ class CA:
             best_genome = max(population, key=lambda x: x[1])
             fitness_ave /= len(population)
             self.print_info(gen, fitness_ave, best_genome)
-            self.plot_data(gen, fitness_ave, best_genome[1])
+            self.plot_data(gen, fitness_ave, best_genome[1], population)
 
              # Evolve all rulesets in the population
             population = self.ga_env.overlapping_model(population)
@@ -112,27 +113,18 @@ class CA:
         with open(self.logfilename, 'w', newline='') as csv_file:
             csv_writer = csv.writer(csv_file)
             csv_writer.writerow([f"Radius: {self._RADIUS}, Resolution: {self.resolution}, Tests: {self._TESTS}, Velocity: {self.max_velocity}, Position: {self.max_position}, Ang velocity: {self.max_ang_velocity}"])
-
-            csv_writer = csv.DictWriter(csv_file, fieldnames=self.fieldnames)
-            csv_writer.writeheader()
-
-        return self.logfilename
         
 
-    def plot_data(self, gen, ave, max):
+    def plot_data(self, gen, ave, max, population):
         '''
-            Appeds a row consisting of 3 points of data.
+            Appeds a row consisting fitness data (gen#, average of gen, best of gen, fitness of all individuals).
         
         '''
+        all_individuals = [ x[1] for x in population ]
         with open(self.logfilename, 'a', newline='') as csv_file:
-            csv_writer = csv.DictWriter(csv_file, fieldnames=self.fieldnames)
+            csv_writer = csv.writer(csv_file)
+            csv_writer.writerow([gen]+[ave]+[max] + all_individuals)
 
-            info = {
-                "generation": gen,
-                "average_fitness": ave,
-                "max_fitness": max
-            }
-            csv_writer.writerow(info)
 
     def gen_pop_with_threshold(self) -> list:
         population = []
