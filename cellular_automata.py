@@ -2,30 +2,23 @@
 
 import numpy as np
 import random
-from progress.bar import Bar
 from evo_alg import GA
-import csv
-from datetime import datetime
-
-# for writing yaml configs
-import yaml
-from yaml.loader import SafeLoader
-
 
 class CA:
-    def __init__(self, env) -> None:
+    def __init__(self, max_pop = 100):
         # Config stuff
-        self._MAXPOP = 100                  # 100 maximum amount of rules of the first random population
-        self._RADIUS = 2                    # 2 neighbours = radius*2
-        self._ENABLE_THRESHOLD = False      # random search with (False) or without threshold (True)
-        self._RANDOM_THRESHOLD_SIZE = 30    # threshold for genome to be accepted
-        self._ENABLE_SEED = False            # set specific seed
-        self._SEED = 42                     # 42 seed for initial env.reset()
-        self._TESTS = 4                     # how many times to test evolved rules before evolving again
+        self._MAXPOP = max_pop             
+        self._RADIUS = 2            # 2 neighbours = radius*2
+        self._GA = GA("ca")
+
+        # evolution parameters
+        self.uniform_val = round(self._MAXPOP * 0.5)    # percentage of uniform selection
+        self.trunc_val = round(self._MAXPOP * 0.2)      # percentage of truncation selection
+        self.p = 0.04                                   # mutation probability
         
         # observation parameters
-        self.resolution = 10                # bitstring size for each observation
-        self.space_between_observations = 2 # zeroes between each observation
+        self.resolution = 10                    # bitstring size for each observation
+        self.space_between_observations = 2     # zeroes between each observation
         self.min_position = -2.4
         self.max_position = 2.4
         self.min_velocity = -3
@@ -35,9 +28,9 @@ class CA:
         self.min_ang_velocity = -2
         self.max_ang_velocity = 2
 
-        self.ga_env = GA(self._MAXPOP)
 
-    # POPULATION GENERATION
+
+    # MAIN FUNCTIONS
 
     def generate_population(self) -> list:
         '''
@@ -45,9 +38,6 @@ class CA:
         Returns list of individuals (genomes).
         '''
 
-        return self.gen_pop()
-
-    def gen_pop(self) -> list:
         population = []
 
         for _ in range(self._MAXPOP):
@@ -55,11 +45,43 @@ class CA:
 
         return population
 
+    def format_observation(self, observation_raw: list) -> str:
+        '''
+        Converts raw observations into binary CA.
+        Returns a CA.
+        '''
+        
+        # uncomment function to be used
+        # return self.observe()
+        return self.observe_alternate(observation_raw)
+
+    def determine_action(self, genome, ca) -> bool:
+        '''
+        Propagates the CA and runs a majority vote on the final CA.
+        Returns a boolean output.
+        '''
+
+        final_ca = self.propagate(genome, self._RADIUS, ca)
+        return self.majority(final_ca)
+
+    # EVOLUTION
+
+    def evolve(self, population) -> list:
+        '''
+        Evolves the population.
+        Returns new population after evolution.
+        '''
+
+        return self.evolve_overlap(population)
+
+
+
+    # HELPER FUNCTIONS
+
     def gen_rrs(self) -> str:
         ''' 
-            Generates a random ruleset based on the amount of neighbours.
-
-            Returns: random bitstring within range (str)
+        Generates a random ruleset based on the amount of neighbours.
+        Returns: random bitstring within range (str)
         '''
         subst_size = (self._RADIUS * 2) + 1
         max_substr = 2 ** subst_size
@@ -71,17 +93,6 @@ class CA:
         return rrs_bit
 
 
-    # OBSERVATION FORMATTING
-
-    def format_observation(self, observation_raw: list) -> str:
-        '''
-        Converts raw observations into binary CA.
-        Returns a CA.
-        '''
-        
-        # uncomment function to be used
-        # return self.observe()
-        return self.observe_alternate(observation_raw)
 
     def observe(self, observation_raw) -> str:
         '''
@@ -164,23 +175,23 @@ class CA:
 
     def binary_bin(self, obs: float, min: float, max: float, resolution: int) -> str:
         '''
-            Creates equally sized bins and puts x within corresponding bin.
-            Bin with x equals 1, the rest of the values equal 0
+        Creates equally sized bins and puts x within corresponding bin.
+        Bin with x equals 1, the rest of the values equal 0
 
-            Input:
-                x: value to be evaluated
-                min: minimum interval value
-                max: maximum interval value
-                resolution: number of intervals
-            Returns:
-                binary string of binned result
+        Input:
+            x: value to be evaluated
+            min: minimum interval value
+            max: maximum interval value
+            resolution: number of intervals
+        Returns:
+            binary string of binned result
         '''
 
         intervals = np.linspace(min, max+0.1*max, resolution)
 
         bin_obs = ""
         for i in range(len(intervals)-1):
-            if obs >= intervals[i] and x < intervals[i+1]:
+            if obs >= intervals[i] and obs < intervals[i+1]:
                 bin_obs += "1"
             else:
                 bin_obs += "0"
@@ -189,7 +200,7 @@ class CA:
 
     def add_zeroes(self, n: int) -> str:
         '''
-            Returns a string of n zeroes
+        Returns a string of n zeroes
         '''
         str_zeroes = ""
         for _ in range(n):
@@ -197,26 +208,16 @@ class CA:
         return str_zeroes
 
 
-    # DETERMINING OUTPUT
-
-    def determine_action(self, genome, ca) -> bool:
-        '''
-        Propagates the CA and runs a majority vote on the final CA.
-        Returns a boolean output.
-        '''
-
-        final_ca = self.propagate(genome, self._RADIUS, ca)
-        return self.majority(final_ca)
 
     def propagate(self, ruleset: str, radius: int, initial_CA: str) -> str:
         '''
-            Propagates the CA a number of times equal to its length.
+        Propagates the CA a number of times equal to its length.
 
-            Input:
-                ruleset: state transition function
-                initial_CA: initial state of CA
-            Returns: 
-                final state of the CA
+        Input:
+            ruleset: state transition function
+            initial_CA: initial state of CA
+        Returns: 
+            final state of the CA
         '''
 
         # variable declaration
@@ -244,8 +245,8 @@ class CA:
 
     def majority(self, bitstring: str) -> bool:
         '''
-            Determines action of the cart.
-            Output is boolean
+        Determines action of the cart.
+        Output is boolean
         '''
 
         ones = bitstring.count('1')
@@ -257,11 +258,81 @@ class CA:
             return 0
 
 
-    # EVOLUTION
 
-    def evolve(self, population) -> list:
+    def evolve_overlap(self, population: list) -> list:
         '''
-        Evolves the population.
-        Returns new population after evolution.
+        New evolution algorithm. 
+        Parents are appended to new population, which is then uniformly 
+        selected until new population matches old.
+
+        Input: 
+            old population
+        Returns: 
+            new population
         '''
-        return self.ga_env.overlapping_model(population)
+
+        population_new = []
+
+        # n = offspring 100, m = parents 20
+        # x = n+m
+        # population_new = uniform(x - 1) + best individual
+
+        # 1. choose individuals
+        parents = self._GA.tournament(population, self.uniform_val, self.trunc_val)
+
+        # 2. reproduction
+        while(len(population_new) < self._MAXPOP):
+
+            parent1, fitness = random.choice(parents)
+            parent2, fitness = random.choice(parents)
+
+            offspring = self._GA.n_point_crossover(parent1, parent2, [round(len(parent1)/2)])
+            for individual in offspring:
+                individual = self._GA.list_to_string(individual)
+                individual = self._GA.mutation(individual, self.p)
+                population_new.append([individual, 0])
+
+        # print(f'new population:')
+        # for i in population_new:
+        #     print(i)
+
+        # add parents to population
+        population_new.extend(parents)
+        # uniform selection of new population until count matches old population
+        population_new = self._GA.uniform(population_new, self._MAXPOP-1)
+        # append best individual from previous generation
+        population_new.append(self._GA.truncation(population, 1)[0])
+
+        return population_new
+
+    def evolve_no_overlap(self, population: list) -> list:
+        '''
+        Performs evolution (tm)
+
+        Input: 
+            old population
+        Returns: 
+            new population
+        '''
+
+        population_new = []
+
+        # 1. choose individuals
+        chosen_ones = self._GA.tournament(population, round(self._MAXPOP * 0.5), 20)
+
+        # 2. reproduction
+        while(len(population_new) < self._MAXPOP):   
+
+            parent1, fitness = random.choice(chosen_ones)
+            parent2, fitness = random.choice(chosen_ones)
+            
+            offspring = self._GA.n_point_crossover(parent1, parent2, [round(len(parent1)/2)])
+            for individual in offspring:
+                individual = self._GA.list_to_string(individual)
+                individual = self._GA.mutation(individual, 0.04)
+                population_new.append([individual, 0])
+
+        # print(f'new population:')
+        # for i in population_new:
+        #     print(i)
+        return population_new
