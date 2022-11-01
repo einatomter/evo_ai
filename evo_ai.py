@@ -11,14 +11,14 @@ from cellular_automata import CA
 from ann import ANN
 
 class Evo_AI:
-    def __init__(self, model_type: str, env):
+    def __init__(self, model_type: str):
         # Default values.
         # It is recommended to change parameters through the
         # config yaml file and load it through main.
         
         # general parameters            # format: default, param info
+        self.enable_render = False
         self.model_type = model_type    # ca, ann
-        self.env = env
 
         # testing parameters
         self.genome = None
@@ -60,6 +60,7 @@ class Evo_AI:
         time_total = 0
 
         print("Initializing environment")
+        self.env_init()
         observation, info = self.env_reset()
 
         print("Initialization successful. Running main loop")
@@ -100,6 +101,7 @@ class Evo_AI:
 
         print("Initializing environment and population")
         # initialize environment
+        self.env_init()
         observation, info = self.env_reset()
         # generate starting population
         population = self.model.generate_population()
@@ -184,6 +186,12 @@ class Evo_AI:
         with open(file_path) as f:
             data = yaml.load(f, Loader = SafeLoader)
 
+                    # set rendering
+            try:
+                self.enable_render = data["enable_render"]
+            except:
+                pass
+
             params_test = data["test"]
             params_learn = data["learn"]
             params_evo = data["evolution"]
@@ -195,6 +203,7 @@ class Evo_AI:
         '''
         Parses parameters and sets respective values
         '''
+
         # set test parameters
         try:
             self.genome = params_test["genome"]
@@ -213,6 +222,12 @@ class Evo_AI:
 
 
     # HELPER FUNCTIONS
+
+    def env_init(self):
+        if self.enable_render:
+            self.env = gym.make("CartPole-v1", render_mode = "human")
+        else:
+            self.env = gym.make("CartPole-v1")
 
     def env_reset(self):
         '''
@@ -236,14 +251,13 @@ class Evo_AI:
 
 
 def main():
-    # cellular_automaton(gen_rrs(5), 2, "101110")
     env = gym.make("CartPole-v1")
     # ai_model = Evo_AI("ca", env)
-    ai_model = Evo_AI("ca", env)
-    ai_model.parse_yaml("config_ca.yaml")
+    algorithm = Evo_AI("ca", env)
+    algorithm.parse_yaml("config_ca.yaml")
     # ai_model.learn()
     # ai_model.test()
-    ai_model.test()
+    algorithm.test()
 
 if __name__ == "__main__":
     main()

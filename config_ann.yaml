@@ -1,4 +1,7 @@
 ---
+  enable_render: False          # enable rendering. 
+                                # NOTE: This setting is enabled regardless of testing or learning.
+                                # It is not recommended to set this true during learning.
   # test parameters
   # NOTE: radius and observation parameters need to match genome being tested.
   test:
