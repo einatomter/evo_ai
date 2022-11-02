@@ -34,7 +34,7 @@ class Evo_AI:
 
     # MAIN FUNCTIONS
 
-    def init_model(self, model_type):
+    def init_model(self, model_type) -> None:
         if model_type == "ca":
             print("--- Building CA model ---")
             self.model = CA()
@@ -47,7 +47,7 @@ class Evo_AI:
             print("ERROR: Unknown model, exiting...")
             exit()
 
-    def test(self):
+    def test(self) -> None:
         '''
         Test a specific genome.
         Genome must match model used.
@@ -88,7 +88,7 @@ class Evo_AI:
         self.env.close()        
 
 
-    def learn(self):
+    def learn(self) -> None:
         '''
         Learn and evolve algorithm according to model specified.
 
@@ -177,7 +177,7 @@ class Evo_AI:
     #         csv_writer.writerow([gen]+[ave]+[max] + all_individuals)
 
 
-    def parse_yaml(self, file_path: str):
+    def parse_yaml(self, file_path: str) -> None:
         '''
         Parse yaml file containing parameters.
         '''
@@ -199,7 +199,7 @@ class Evo_AI:
             self.parse_parameters(params_test, params_learn)
             self.model.parse_parameters(params_evo)
 
-    def parse_parameters(self, params_test: dict, params_learn: dict):
+    def parse_parameters(self, params_test: dict, params_learn: dict) -> None:
         '''
         Parses parameters and sets respective values
         '''
@@ -223,13 +223,13 @@ class Evo_AI:
 
     # HELPER FUNCTIONS
 
-    def env_init(self):
+    def env_init(self) -> None:
         if self.enable_render:
             self.env = gym.make("CartPole-v1", render_mode = "human")
         else:
             self.env = gym.make("CartPole-v1")
 
-    def env_reset(self):
+    def env_reset(self) -> tuple:
         '''
         Helper function. Sets seed if specified.
         '''
@@ -239,7 +239,7 @@ class Evo_AI:
         return self.env.reset()
 
 
-    def print_info(self, gen, fitness_ave, best_genome):
+    def print_info(self, gen, fitness_ave, best_genome) -> None:
         '''
         Helper function. Prints learning statistics.
         '''

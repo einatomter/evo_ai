@@ -50,15 +50,15 @@ class ANN:
         '''
         return observation_raw
 
-    def determine_action(self, genome, observation):
+    def determine_action(self, genome: list, observation: list) -> bool:
         '''
         Feeds observation as input to the ANN.
         Last layer has a binary step function.
         Returns a boolean output.
         '''
 
-        last_layer = self.weighted_sum(genome, observation)
-        return self.binary_step(last_layer)
+        last_layer = self._weighted_sum(genome, observation)
+        return self._binary_step(last_layer)
 
     def evolve(self, population: list) -> list:
         '''
@@ -87,7 +87,7 @@ class ANN:
 
         return population_new
 
-    def parse_parameters(self, params: dict):
+    def parse_parameters(self, params: dict) -> None:
         '''
         Parses and sets parameters.
         '''
@@ -108,10 +108,10 @@ class ANN:
 
     # HELPER FUNCTIONS
 
-    def sigmoid(self, x):
+    def _sigmoid(self, x: float) -> float:
         return 1 / (1 + np.exp(-x))
 
-    def weighted_sum(self, weights: list, input: list) -> float:
+    def _weighted_sum(self, weights: list, input: list) -> float:
         '''
         Calculate weighted sum of input
         '''
@@ -120,7 +120,7 @@ class ANN:
             sum += input[i]*weights[i]
         return sum
 
-    def binary_step(self, x: float) -> bool:
+    def _binary_step(self, x: float) -> bool:
         if x < 0:
             return 0
         # else

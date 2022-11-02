@@ -7,14 +7,14 @@ class GA:
     '''
     Provides functions to perform evolution of genetic algorithms
     '''
-    def __init__(self, model) -> None:
+    def __init__(self, model):
         self.model = model
 
     # MAIN FUNCTIONS
 
     def truncation(self, population: list, n: int) -> list:
         '''
-        Returns n percent of best individuals
+        Returns n number of best individuals
         '''
 
         chosen = []
@@ -27,7 +27,7 @@ class GA:
 
     def uniform(self, population: list, n: int) -> list:
         '''
-        Returns n percent of individuals from population
+        Returns n number of individuals from population
         '''
         individual = random.sample(population, n)
 
@@ -56,9 +56,9 @@ class GA:
         '''
 
         if self.model == "ca":
-            return self.mutation_ca(parent, p)
+            return self._mutation_ca(parent, p)
         elif self.model == "ann":
-            return self.mutation_ann(parent, p, lr)
+            return self._mutation_ann(parent, p, lr)
 
     def n_point_crossover(self, parent1, parent2, cut_points: list) -> list:
         '''
@@ -80,7 +80,7 @@ class GA:
 
         return [offspring1, offspring2]
 
-    def uniform_crossover(self, parent1, parent2, p: int) -> list:
+    def uniform_crossover(self, parent1, parent2, p: 0.5) -> list:
         '''
         Performs crossover with probability p for genes to be copied from the opposite parent.
         '''
@@ -101,7 +101,14 @@ class GA:
 
     # HELPER FUNCTIONS
 
-    def mutation_ca(self, parent: str, p: int) -> str:
+    def list_to_string(self, ca_list: list) -> str:
+        '''
+        Helper function for CAs to convert list back to string.
+        '''
+        ca_str = ''.join((x) for x in ca_list)
+        return ca_str
+
+    def _mutation_ca(self, parent: str, p: int) -> str:
         '''
         Mutation for CAs
         '''
@@ -110,13 +117,13 @@ class GA:
 
         for bit in parent:
             if random.random() < p:
-                offspring += (self.bit_flip(bit))
+                offspring += (self._bit_flip(bit))
             else:
                 offspring += (bit)
 
         return offspring
 
-    def mutation_ann(self, genome: list, p, lr: float):
+    def _mutation_ann(self, genome: list, p, lr: float) -> list:
         '''
         Mutation for ANNs
         '''
@@ -135,16 +142,9 @@ class GA:
 
 
 
-    def bit_flip(self, gene: str) -> str:
+    def _bit_flip(self, gene: str) -> str:
         '''
         CA helper function. Flips bit.
         '''
         gene_flipped = str(1 - int(gene))
         return gene_flipped
-
-    def list_to_string(self, ca_list: list) -> str:
-        '''
-        Helper function for CAs to convert list back to string.
-        '''
-        ca_str = ''.join((x) for x in ca_list)
-        return ca_str

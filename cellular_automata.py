@@ -45,7 +45,7 @@ class CA:
         population = []
 
         for _ in range(self.max_pop):
-            population.append([self.gen_rrs(), 0])
+            population.append([self._gen_rrs(), 0])
 
         return population
 
@@ -56,27 +56,27 @@ class CA:
         '''
         
         # uncomment function to be used
-        # return self.observe()
-        return self.observe_alternate(observation_raw)
+        # return self._observe()
+        return self._observe_alternate(observation_raw)
 
     def determine_action(self, genome, ca) -> bool:
         '''
-        Propagates the CA and runs a majority vote on the final CA.
+        Propagates the CA and runs a _majority vote on the final CA.
         Returns a boolean output.
         '''
 
-        final_ca = self.propagate(genome, self.radius, ca)
-        return self.majority(final_ca)
+        final_ca = self._propagate(genome, self.radius, ca)
+        return self._majority(final_ca)
 
-    def evolve(self, population) -> list:
+    def evolve(self, population: list) -> list:
         '''
         Evolves the population.
         Returns new population after evolution.
         '''
 
-        return self.evolve_overlap(population)
+        return self._evolve_overlap(population)
 
-    def parse_parameters(self, params: dict):
+    def parse_parameters(self, params: dict) -> None:
         '''
         Parses and sets parameters.
         '''
@@ -108,7 +108,7 @@ class CA:
 
     # HELPER FUNCTIONS
 
-    def gen_rrs(self) -> str:
+    def _gen_rrs(self) -> str:
         ''' 
         Generates a random ruleset based on the amount of neighbours.
         Returns: random bitstring within range (str)
@@ -124,7 +124,7 @@ class CA:
 
 
 
-    def observe(self, observation_raw) -> str:
+    def _observe(self, observation_raw: list) -> str:
         '''
         Maps observations directly to binary according to each state's min/max values.
         Size of the binary string is equal to resolution set.
@@ -132,7 +132,7 @@ class CA:
         '''
         observation_ca = ""
 
-        observation_ca += self.add_zeroes(self.space_between_observations)
+        observation_ca += self._add_zeroes(self.space_between_observations)
 
         dec_position = observation_raw[0]
         dec_position = round(np.interp(dec_position, [self.min_position, self.max_position],
@@ -141,7 +141,7 @@ class CA:
         bin_position = bin_position.zfill(self.resolution)
 
         observation_ca += bin_position
-        observation_ca += self.add_zeroes(self.space_between_observations)
+        observation_ca += self._add_zeroes(self.space_between_observations)
 
         dec_velocity = observation_raw[1]
         dec_velocity = round(np.interp(dec_velocity, [self.min_velocity, self.max_velocity],
@@ -150,7 +150,7 @@ class CA:
         bin_velocity = bin_velocity.zfill(self.resolution)
 
         observation_ca += bin_velocity
-        observation_ca += self.add_zeroes(self.space_between_observations)
+        observation_ca += self._add_zeroes(self.space_between_observations)
 
         dec_angle = observation_raw[2]
         dec_angle = round(np.interp(dec_angle, [self.min_angle, self.max_angle],
@@ -159,7 +159,7 @@ class CA:
         bin_angle = bin_angle.zfill(self.resolution)
 
         observation_ca += bin_angle
-        observation_ca += self.add_zeroes(self.space_between_observations)
+        observation_ca += self._add_zeroes(self.space_between_observations)
 
         dec_ang_velocity = observation_raw[3]
         dec_ang_velocity = round(np.interp(dec_ang_velocity, [self.min_ang_velocity, self.max_ang_velocity],
@@ -171,7 +171,7 @@ class CA:
         
         return observation_ca
 
-    def observe_alternate(self, observation: list) -> str:
+    def _observe_alternate(self, observation: list) -> str:
         '''
         Creates a number of intervals equal to resolution set.
         Observation sets the interval it is in equal to 1, the rest equal to 0.
@@ -179,31 +179,31 @@ class CA:
         Returns a CA of observations.
         '''
         observation_ca = ""
-        observation_ca += self.add_zeroes(self.space_between_observations)
+        observation_ca += self._add_zeroes(self.space_between_observations)
 
         # position observation
-        bin_position = self.binary_bin(observation[0], self.min_position, self.max_position, self.resolution)
+        bin_position = self._binary_bin(observation[0], self.min_position, self.max_position, self.resolution)
         observation_ca += bin_position
-        observation_ca += self.add_zeroes(self.space_between_observations)
+        observation_ca += self._add_zeroes(self.space_between_observations)
 
         # velocity observation
-        bin_velocity = self.binary_bin(observation[1], self.min_velocity, self.max_velocity, self.resolution)
+        bin_velocity = self._binary_bin(observation[1], self.min_velocity, self.max_velocity, self.resolution)
         observation_ca += bin_velocity
-        observation_ca += self.add_zeroes(self.space_between_observations)
+        observation_ca += self._add_zeroes(self.space_between_observations)
 
         # angle observation
-        bin_angle = self.binary_bin(observation[2], self.min_angle, self.max_angle, self.resolution)
+        bin_angle = self._binary_bin(observation[2], self.min_angle, self.max_angle, self.resolution)
         observation_ca += bin_angle
-        observation_ca += self.add_zeroes(self.space_between_observations)
+        observation_ca += self._add_zeroes(self.space_between_observations)
 
         # angular velocity observation
-        bin_ang_velocity = self.binary_bin(observation[3], self.min_ang_velocity, self.max_ang_velocity, self.resolution)
+        bin_ang_velocity = self._binary_bin(observation[3], self.min_ang_velocity, self.max_ang_velocity, self.resolution)
         observation_ca += bin_ang_velocity
-        observation_ca += self.add_zeroes(self.space_between_observations)
+        observation_ca += self._add_zeroes(self.space_between_observations)
 
         return observation_ca
 
-    def binary_bin(self, obs: float, min: float, max: float, resolution: int) -> str:
+    def _binary_bin(self, obs: float, min: float, max: float, resolution: int) -> str:
         '''
         Creates equally sized bins and puts x within corresponding bin.
         Bin with x equals 1, the rest of the values equal 0
@@ -228,7 +228,7 @@ class CA:
 
         return bin_obs
 
-    def add_zeroes(self, n: int) -> str:
+    def _add_zeroes(self, n: int) -> str:
         '''
         Returns a string of n zeroes
         '''
@@ -239,7 +239,7 @@ class CA:
 
 
 
-    def propagate(self, ruleset: str, radius: int, initial_CA: str) -> str:
+    def _propagate(self, ruleset: str, radius: int, initial_CA: str) -> str:
         '''
         Propagates the CA a number of times equal to its length.
 
@@ -273,7 +273,7 @@ class CA:
         # /loop propagation
         return new_CA
 
-    def majority(self, bitstring: str) -> bool:
+    def _majority(self, bitstring: str) -> bool:
         '''
         Determines action of the cart.
         Output is boolean
@@ -289,7 +289,7 @@ class CA:
 
 
 
-    def evolve_overlap(self, population: list) -> list:
+    def _evolve_overlap(self, population: list) -> list:
         '''
         New evolution algorithm. 
         Parents are appended to new population, which is then uniformly 
@@ -335,7 +335,7 @@ class CA:
 
         return population_new
 
-    def evolve_no_overlap(self, population: list) -> list:
+    def _evolve_no_overlap(self, population: list) -> list:
         '''
         Performs evolution (tm)
 
