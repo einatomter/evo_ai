@@ -1,32 +1,30 @@
 #!/usr/bin/env python3
 
+import csv
 import numpy as np
 import random
-from progress.bar import Bar
+
 from evo_alg import GA
-import csv
-from datetime import datetime
-
-# for writing yaml configs
-import yaml
-from yaml.loader import SafeLoader
-
 
 class CA:
-    def __init__(self, env, genome: str = "") -> None:
+    def __init__(self):
+        # Default values.
+        # It is recommended to change parameters through the
+        # config yaml file and load it through main.
+
         # Config stuff
-        self._MAXPOP = 100                  # 100 maximum amount of rules of the first random population
-        self._RADIUS = 2                    # 2 neighbours = radius*2
-        self._ENABLE_THRESHOLD = False      # random search with (False) or without threshold (True)
-        self._RANDOM_THRESHOLD_SIZE = 30    # threshold for genome to be accepted
-        self._ENABLE_SEED = False            # set specific seed
-        self._SEED = 42                     # 42 seed for initial env.reset()
-        self._TESTS = 4                     # how many times to test evolved rules before evolving again
-        self._GENOME = genome
+        self._GA = GA("ca")
+
+        # evolution parameters
+        self.max_pop = 100             
+        self.radius = 2                                 # 2 neighbours = radius*2
+        self.uniform_val = round(self.max_pop * 0.5)    # uniform selection
+        self.trunc_val = round(self.max_pop * 0.2)      # truncation selection
+        self.mutation_val = 0.04                        # mutation probability
         
         # observation parameters
-        self.resolution = 10                # bitstring size for each observation
-        self.space_between_observations = 2 # zeroes between each observation
+        self.resolution = 10                    # bitstring size for each observation
+        self.space_between_observations = 2     # zeroes between each observation
         self.min_position = -2.4
         self.max_position = 2.4
         self.min_velocity = -3
@@ -36,162 +34,146 @@ class CA:
         self.min_ang_velocity = -2
         self.max_ang_velocity = 2
 
-        self.env = env
-        if self._ENABLE_SEED:
-            self.observation, info = self.env.reset(seed = self._SEED)
-        else:
-            self.observation, info = self.env.reset()
 
-        self.ga_env = GA(self._MAXPOP)
-        self.write_file()
-        
-        
-    def CA_run(self):
+
+    # MAIN FUNCTIONS
+
+    def generate_population(self) -> list:
+        '''
+        Generates population.
+        Returns list of individuals (genomes).
+        '''
+
         population = []
-        time = 0
-        gen = 0
 
-        # Random rulesets generated in a list
-        if self._ENABLE_THRESHOLD:
-            population = self.gen_pop_with_threshold()
-        else:
-            population = self.gen_pop()
-
-        while True: # maybe need something better, some evolve threshold maybe to end the evolution cycle
-            # reset values
-            fitness_ave = 0
-
-            # Test the whole population x (self._TESTS) amount of times
-            for i in range(len(population)):
-                # reset fitness scores of the whole population
-                population[i][1] = 0
-                # all tests
-                for _ in range(self._TESTS):
-                    # current test
-                    while True:
-                        action = self.majority(self.propagate(population[i][0], self._RADIUS, self.observe_alternate()))
-                        self.observation, reward, terminated, truncated, info = self.env.step(action)
-                        time += reward
-
-                        if terminated or truncated:
-                            population[i][1] += time
-                            time = 0
-                            if self._ENABLE_SEED:
-                                self.observation, info = self.env.reset(seed = self._SEED)
-                            else:
-                                self.observation, info = self.env.reset()
-                            break
-                    # /current test
-                # /all tests
-                population[i][1] = population[i][1] / self._TESTS 
-                fitness_ave += population[i][1]
-            # /test whole population
-           
-            # Print generation info (fitness average, fitness max, best ruleset) 
-            gen += 1
-            best_genome = max(population, key=lambda x: x[1])
-            fitness_ave /= len(population)
-            self.print_info(gen, fitness_ave, best_genome)
-            self.plot_data(gen, fitness_ave, best_genome[1], population)
-
-             # Evolve all rulesets in the population
-            population = self.ga_env.overlapping_model(population)
-
-        #self.env.close() this thing wants to close stuff but not with WHILE TRU :D
-
-
-    def write_file(self) -> str:
-        '''
-            Creates a log file with timestamp in its name.
-            Writes a string of some of the current parameters and a header of the 3 data points.
-            Returns str of the logfile name for plot_fitness.py
-            
-        '''
-        self.fieldnames = ["generation", "average_fitness", "max_fitness"]
-        self.logfilename = "log" + str(datetime.now().strftime("%d-%m-%Y_%H_%M_%S.%f")) + ".csv"
-
-        with open(self.logfilename, 'w', newline='') as csv_file:
-            csv_writer = csv.writer(csv_file)
-            csv_writer.writerow([f"Radius: {self._RADIUS}, Resolution: {self.resolution}, Tests: {self._TESTS}, Velocity: {self.max_velocity}, Position: {self.max_position}, Ang velocity: {self.max_ang_velocity}"])
-        
-
-    def plot_data(self, gen, ave, max, population):
-        '''
-            Appeds a row consisting fitness data (gen#, average of gen, best of gen, fitness of all individuals).
-        
-        '''
-        all_individuals = [ x[1] for x in population ]
-        with open(self.logfilename, 'a', newline='') as csv_file:
-            csv_writer = csv.writer(csv_file)
-            csv_writer.writerow([gen]+[ave]+[max] + all_individuals)
-
-
-    def gen_pop_with_threshold(self) -> list:
-        population = []
-        time = 0
-
-        with Bar('Generating random population', max=self._MAXPOP, fill='#') as bar:
-            while len(population) < self._MAXPOP:
-                ruleset = self.gen_rrs()
-                action = self.majority(self.propagate(ruleset, self._RADIUS, self.observe_alternate()))
-                self.observation, reward, terminated, truncated, info = self.env.step(action)
-                time += reward
-
-                if terminated or truncated:
-                    if time > self._RANDOM_THRESHOLD_SIZE:
-                        population.append([ruleset, time])
-                        bar.next()
-                    time = 0
-                    if self._ENABLE_SEED:
-                        self.observation, info = self.env.reset(seed = self._SEED)
-                    else:
-                        self.observation, info = self.env.reset()
+        for _ in range(self.max_pop):
+            population.append([self._gen_rrs(), 0])
 
         return population
 
+    def format_observation(self, observation_raw: list) -> str:
+        '''
+        Converts raw observations into binary CA.
+        Returns a CA.
+        '''
+        
+        # uncomment function to be used
+        # return self._observe()
+        return self._observe_alternate(observation_raw)
 
-    def gen_pop(self) -> list:
-        population = []
+    def determine_action(self, genome, ca) -> bool:
+        '''
+        Propagates the CA and runs a _majority vote on the final CA.
+        Returns a boolean output.
+        '''
 
-        for _ in range(self._MAXPOP):
-            population.append([self.gen_rrs(), 0])
+        final_ca = self._propagate(genome, self.radius, ca)
+        return self._majority(final_ca)
 
-        return population
+    def evolve(self, population: list) -> list:
+        '''
+        Evolves the population.
+        Returns new population after evolution.
+        '''
+
+        return self._evolve_overlap(population)
+
+    def parse_parameters(self, params: dict) -> None:
+        '''
+        Parses and sets parameters.
+        '''
+
+        print("Parsing evolutionary parameters")
+
+        try:
+            self.max_pop = params["max_pop"]
+            self.radius = params["radius"]
+            self.uniform_val = round(params["uniform_percentage"] * self.max_pop)
+            self.trunc_val = round(params["truncation_percentage"] * self.max_pop)
+            self.mutation_val = params["mutation_rate"]
+
+            # observation parameters
+            params_obs = params["observation"]
+            self.resolution = params_obs["resolution"]
+            self.space_between_observations = params_obs["space"]
+            self.min_position = params_obs["min_position"]
+            self.max_position = params_obs["max_position"]
+            self.min_velocity = params_obs["min_velocity"]
+            self.max_velocity = params_obs["max_velocity"]
+            self.min_angle = params_obs["min_angle"]
+            self.max_angle = params_obs["max_angle"]
+            self.min_ang_velocity = params_obs["min_ang_velocity"]
+            self.max_ang_velocity = params_obs["max_ang_velocity"]
+
+        except:
+            print("Error in parsing CA parameters, reverting to default values")
+
+    def write_model_params(self, file_path):
+
+        with open(file_path, 'w', newline='') as csv_file:
+            csv_writer = csv.writer(csv_file)
+            csv_writer.writerow([f"Radius: {self.radius}, "
+                                 f"Resolution: {self.resolution}, "
+                                 f"Position: {self.max_position}, "
+                                 f"Velocity: {self.max_velocity}, "
+                                 f"Ang velocity: {self.max_ang_velocity}"])
+
+    # HELPER FUNCTIONS
+
+    def _gen_rrs(self) -> str:
+        ''' 
+        Generates a random ruleset based on the amount of neighbours.
+        Returns: random bitstring within range (str)
+        '''
+        subst_size = (self.radius * 2) + 1
+        max_substr = 2 ** subst_size
+        max_rules = (2 ** max_substr) - 1 # max 255
+
+        rrs_dec = random.randrange(0, max_rules) # 140   10001100
+        rrs_bit = format(rrs_dec, "b").zfill(max_substr)
+
+        return rrs_bit
 
 
-    def observe(self) -> str:
+
+    def _observe(self, observation_raw: list) -> str:
+        '''
+        Maps observations directly to binary according to each state's min/max values.
+        Size of the binary string is equal to resolution set.
+        Returns a CA of observations.
+        '''
         observation_ca = ""
 
-        observation_ca += self.add_zeroes(self.space_between_observations)
+        observation_ca += self._add_zeroes(self.space_between_observations)
 
-        dec_position = self.observation[0]
+        dec_position = observation_raw[0]
         dec_position = round(np.interp(dec_position, [self.min_position, self.max_position],
                                         [0, 2**self.resolution - 1])) # mapping to non-negative values                          
         bin_position = format(dec_position, "b")
         bin_position = bin_position.zfill(self.resolution)
 
         observation_ca += bin_position
-        observation_ca += self.add_zeroes(self.space_between_observations)
+        observation_ca += self._add_zeroes(self.space_between_observations)
 
-        dec_velocity = self.observation[1]
+        dec_velocity = observation_raw[1]
         dec_velocity = round(np.interp(dec_velocity, [self.min_velocity, self.max_velocity],
                                         [0, 2**self.resolution - 1])) # mapping to non-negative values
         bin_velocity = format(dec_velocity, "b")
         bin_velocity = bin_velocity.zfill(self.resolution)
 
         observation_ca += bin_velocity
-        observation_ca += self.add_zeroes(self.space_between_observations)
+        observation_ca += self._add_zeroes(self.space_between_observations)
 
-        dec_angle = self.observation[2]
+        dec_angle = observation_raw[2]
         dec_angle = round(np.interp(dec_angle, [self.min_angle, self.max_angle],
                                     [0, 2**self.resolution - 1]))
         bin_angle = format(dec_angle, "b")
         bin_angle = bin_angle.zfill(self.resolution)
 
         observation_ca += bin_angle
-        observation_ca += self.add_zeroes(self.space_between_observations)
+        observation_ca += self._add_zeroes(self.space_between_observations)
 
-        dec_ang_velocity = self.observation[3]
+        dec_ang_velocity = observation_raw[3]
         dec_ang_velocity = round(np.interp(dec_ang_velocity, [self.min_ang_velocity, self.max_ang_velocity],
                                     [0, 2**self.resolution - 1]))
         bin_ang_velocity = format(dec_ang_velocity, "b")
@@ -201,77 +183,112 @@ class CA:
         
         return observation_ca
 
-    # alternative method for building the observation CA
-    def observe_alternate(self) -> str:
+    def _observe_alternate(self, observation: list) -> str:
+        '''
+        Creates a number of intervals equal to resolution set.
+        Observation sets the interval it is in equal to 1, the rest equal to 0.
+        Entire interval range spans each state's min/max values.
+        Returns a CA of observations.
+        '''
         observation_ca = ""
-        observation_ca += self.add_zeroes(self.space_between_observations)
+        observation_ca += self._add_zeroes(self.space_between_observations)
 
         # position observation
-        bin_position = self.binary_bin(self.observation[0], self.min_position, self.max_position, self.resolution)
+        bin_position = self._binary_bin(observation[0], self.min_position, self.max_position, self.resolution)
         observation_ca += bin_position
-        observation_ca += self.add_zeroes(self.space_between_observations)
+        observation_ca += self._add_zeroes(self.space_between_observations)
 
         # velocity observation
-        bin_velocity = self.binary_bin(self.observation[1], self.min_velocity, self.max_velocity, self.resolution)
+        bin_velocity = self._binary_bin(observation[1], self.min_velocity, self.max_velocity, self.resolution)
         observation_ca += bin_velocity
-        observation_ca += self.add_zeroes(self.space_between_observations)
+        observation_ca += self._add_zeroes(self.space_between_observations)
 
         # angle observation
-        bin_angle = self.binary_bin(self.observation[2], self.min_angle, self.max_angle, self.resolution)
+        bin_angle = self._binary_bin(observation[2], self.min_angle, self.max_angle, self.resolution)
         observation_ca += bin_angle
-        observation_ca += self.add_zeroes(self.space_between_observations)
+        observation_ca += self._add_zeroes(self.space_between_observations)
 
         # angular velocity observation
-        bin_ang_velocity = self.binary_bin(self.observation[3], self.min_ang_velocity, self.max_ang_velocity, self.resolution)
+        bin_ang_velocity = self._binary_bin(observation[3], self.min_ang_velocity, self.max_ang_velocity, self.resolution)
         observation_ca += bin_ang_velocity
-        observation_ca += self.add_zeroes(self.space_between_observations)
+        observation_ca += self._add_zeroes(self.space_between_observations)
 
         return observation_ca
 
-    def propagate(self, ruleset: str, radius: int, initial_values: str) -> str:
+    def _binary_bin(self, obs: float, min: float, max: float, resolution: int) -> str:
         '''
-            Performs update step
+        Creates equally sized bins and puts x within corresponding bin.
+        Bin with x equals 1, the rest of the values equal 0
 
-            Ruleset is an array of possible rules
+        Input:
+            x: value to be evaluated
+            min: minimum interval value
+            max: maximum interval value
+            resolution: number of intervals
+        Returns:
+            binary string of binned result
+        '''
 
-            Initial values is binary string from observations
+        intervals = np.linspace(min, max+0.1*max, resolution)
 
-            Returns: 
-                new_values
+        bin_obs = ""
+        for i in range(len(intervals)-1):
+            if obs >= intervals[i] and obs < intervals[i+1]:
+                bin_obs += "1"
+            else:
+                bin_obs += "0"
+
+        return bin_obs
+
+    def _add_zeroes(self, n: int) -> str:
+        '''
+        Returns a string of n zeroes
+        '''
+        str_zeroes = ""
+        for _ in range(n):
+            str_zeroes += "0"
+        return str_zeroes
+
+
+
+    def _propagate(self, ruleset: str, radius: int, initial_CA: str) -> str:
+        '''
+        Propagates the CA a number of times equal to its length.
+
+        Input:
+            ruleset: state transition function
+            initial_CA: initial state of CA
+        Returns: 
+            final state of the CA
         '''
 
         # variable declaration
-        CA_length = len(initial_values)
-        current_values = initial_values
+        CA_length = len(initial_CA)
+        current_CA = initial_CA
         
         # range is size of cellular automaton/initial value
         # range is how many times the CA is propagated
         for _ in range(int(CA_length)):
-            new_values = ""
+            new_CA = ""
             # looping through CA
             for j in range(CA_length):
                 substr = ""
                 for cell in range(-radius, radius+1):
-                    substr += current_values[(j + cell) % CA_length]
+                    substr += current_CA[(j + cell) % CA_length]
                 # convert substr to decimal
                 # used to find corresponding rule index
                 rule_index = int(substr, 2)
                 # print(rule_index)
-                new_values += ruleset[rule_index]
+                new_CA += ruleset[rule_index]
             # /loop CA
-            current_values = new_values
+            current_CA = new_CA
         # /loop propagation
-        return new_values
+        return new_CA
 
-
-    def majority(self, bitstring: str) -> bool:
+    def _majority(self, bitstring: str) -> bool:
         '''
-            Determines action of the cart.
-            Currently decides based on majority vote.
-
-            Returns: 
-                0 (left)
-                1 (right)
+        Determines action of the cart.
+        Output is boolean
         '''
 
         ones = bitstring.count('1')
@@ -283,90 +300,81 @@ class CA:
             return 0
 
 
-    def gen_rrs(self) -> str:
-        ''' 
-            Generates a random ruleset based on the amount of neighbours.
 
-            Returns: random bitsting within range (str)
+    def _evolve_overlap(self, population: list) -> list:
         '''
-        subst_size = (self._RADIUS * 2) + 1
-        max_substr = 2 ** subst_size
-        max_rules = (2 ** max_substr) - 1 # max 255
+        New evolution algorithm. 
+        Parents are appended to new population, which is then uniformly 
+        selected until new population matches old.
 
-        rrs_dec = random.randrange(0, max_rules) # 140   10001100
-        rrs_bit = format(rrs_dec, "b").zfill(max_substr)
-
-        return rrs_bit
-
-    def CA_play(self, genome: str):
-        time = 0
-        average_time = 0
-        tests = 50
-
-        if len(genome) == 128:
-            self._RADIUS = 3
-        elif len(genome) == 32:
-            self._RADIUS = 2
-
-        print(genome)
-        for _ in range(tests):
-            while True:
-                action = self.majority(self.propagate(genome, self._RADIUS, self.observe_alternate()))
-                self.observation, reward, terminated, truncated, info = self.env.step(action)
-                time += reward
-
-                if terminated or truncated:
-                    print(f"time: {time}")
-                    average_time += time
-                    time = 0
-                    if self._ENABLE_SEED:
-                        self.observation, info = self.env.reset(seed = self._SEED)
-                    else:
-                        self.observation, info = self.env.reset()
-                    break
-        print(f"average time: {average_time/tests}")
-        self.env.close()
-
-    @staticmethod
-    def binary_bin(x: float, min: float, max: float, resolution: int) -> str:
-        '''
-            Creates equally sized bins and puts x within corresponding bin.
-            Bin with x equals 1, the rest of the values equal 0
-
-            Input:
-                x: value to be evaluated
-                min: minimum interval value
-                max: maximum interval value
-                resolution: number of intervals
-            Returns:
-                binary string of binned result
+        Input: 
+            old population
+        Returns: 
+            new population
         '''
 
-        intervals = np.linspace(min, max+0.1*max, resolution)
+        population_new = []
 
-        bin_x = ""
-        for i in range(len(intervals)-1):
-            if x >= intervals[i] and x < intervals[i+1]:
-                bin_x += "1"
-            else:
-                bin_x += "0"
+        # n = offspring 100, m = parents 20
+        # x = n+m
+        # population_new = uniform(x - 1) + best individual
 
-        return bin_x
+        # 1. choose individuals
+        parents = self._GA.tournament(population, self.uniform_val, self.trunc_val)
 
-    @staticmethod
-    def add_zeroes(n: int) -> str:
+        # 2. reproduction
+        while(len(population_new) < self.max_pop):
+
+            parent1, fitness = random.choice(parents)
+            parent2, fitness = random.choice(parents)
+
+            offspring = self._GA.n_point_crossover(parent1, parent2, [round(len(parent1)/2)])
+            for individual in offspring:
+                individual = self._GA.list_to_string(individual)
+                individual = self._GA.mutation(individual, self.mutation_val)
+                population_new.append([individual, 0])
+
+        # print(f'new population:')
+        # for i in population_new:
+        #     print(i)
+
+        # add parents to population
+        population_new.extend(parents)
+        # uniform selection of new population until count matches old population
+        population_new = self._GA.uniform(population_new, self.max_pop-1)
+        # append best individual from previous generation
+        population_new.append(self._GA.truncation(population, 1)[0])
+
+        return population_new
+
+    def _evolve_no_overlap(self, population: list) -> list:
         '''
-            returns a string of n zeroes
-        '''
-        str_zeroes = ""
-        for _ in range(n):
-            str_zeroes += "0"
-        return str_zeroes
+        Performs evolution (tm)
 
-    @staticmethod
-    def print_info(gen, fitness_ave, best_genome):
-        print(f'gen:\t{gen}\t', end='')
-        print(f'fitness ave:\t{fitness_ave:.2f}\t', end='')
-        print(f'fitness max:\t{best_genome[1]}\t', end='')
-        print(f'genome:\t{best_genome[0]}\t', end='')
-        print()
+        Input: 
+            old population
+        Returns: 
+            new population
+        '''
+
+        population_new = []
+
+        # 1. choose individuals
+        chosen_ones = self._GA.tournament(population, self.uniform_val, self.trunc_val)
+
+        # 2. reproduction
+        while(len(population_new) < self.max_pop):   
+
+            parent1, fitness = random.choice(chosen_ones)
+            parent2, fitness = random.choice(chosen_ones)
+            
+            offspring = self._GA.n_point_crossover(parent1, parent2, [round(len(parent1)/2)])
+            for individual in offspring:
+                individual = self._GA.list_to_string(individual)
+                individual = self._GA.mutation(individual, 0.04)
+                population_new.append([individual, 0])
+
+        # print(f'new population:')
+        # for i in population_new:
+        #     print(i)
+        return population_new
