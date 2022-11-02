@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
+import csv
 import numpy as np
 import random
+
 from evo_alg import GA
 
 class ANN:
@@ -105,6 +107,14 @@ class ANN:
 
         except:
             print("Error in parsing ANN parameters, reverting to default values")
+
+    def write_model_params(self, file_path):
+
+        with open(file_path, 'w', newline='') as csv_file:
+            csv_writer = csv.writer(csv_file)
+            csv_writer.writerow([f"Random start: {self.random_start}, "
+                                 f"Random range: {self.rand_range}, "
+                                 f"Learning rate: {self.learning_rate}"])
 
     # HELPER FUNCTIONS
 

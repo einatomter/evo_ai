@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
+import csv
 import numpy as np
 import random
+
 from evo_alg import GA
 
 class CA:
@@ -105,6 +107,16 @@ class CA:
 
         except:
             print("Error in parsing CA parameters, reverting to default values")
+
+    def write_model_params(self, file_path):
+
+        with open(file_path, 'w', newline='') as csv_file:
+            csv_writer = csv.writer(csv_file)
+            csv_writer.writerow([f"Radius: {self.radius}, "
+                                 f"Resolution: {self.resolution}, "
+                                 f"Position: {self.max_position}, "
+                                 f"Velocity: {self.max_velocity}, "
+                                 f"Ang velocity: {self.max_ang_velocity}"])
 
     # HELPER FUNCTIONS
 

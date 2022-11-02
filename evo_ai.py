@@ -106,6 +106,9 @@ class Evo_AI:
         # generate starting population
         population = self.model.generate_population()
 
+        print("Creating log file")
+        self.init_file()
+
         print("Initialization successful. Running main loop")
         # main loop
         while gen != self._GEN_MAX:
@@ -144,6 +147,8 @@ class Evo_AI:
             fitness_ave /= len(population)
             self.print_info(gen, fitness_ave, best_genome)
 
+            self.write_file(gen, fitness_ave, best_genome[1], population)
+
             # perform evolution
             population = self.model.evolve(population)
 
@@ -151,30 +156,25 @@ class Evo_AI:
         print("Reached generation limit, exiting...")
         self.env.close()
 
-#     def init_file(self) -> None:
-#     '''
-#         Creates a log file with timestamp in its name.
-#         Writes a string of some of the current parameters and a header of the 3 data points.
-#         Returns str of the logfile name for plot_fitness.py
+    def init_file(self) -> None:
+        '''
+        Creates a log file with timestamp in its name.
+        Writes a string of some of the current parameters and a header of the 3 data points.
+        Returns str of the logfile name for plot_fitness.py
+        '''
         
-#     '''
-#     self.fieldnames = ["generation", "average_fitness", "max_fitness"]
-#     self.logfilename = "log" + str(datetime.now().strftime("%d-%m-%Y_%H_%M_%S.%f")) + ".csv"
-
-#     with open(self.logfilename, 'w', newline='') as csv_file:
-#         csv_writer = csv.writer(csv_file)
-#         csv_writer.writerow([f"Radius: {self._RADIUS}, Resolution: {self.resolution}, Tests: {self._TESTS}, Velocity: {self.max_velocity}, Position: {self.max_position}, Ang velocity: {self.max_ang_velocity}"])
-    
-
-    # def write_file(self, gen, ave, max, population) -> None:
-    #     '''
-    #         Appends a row consisting fitness data (gen#, average of gen, best of gen, fitness of all individuals).
+        self.logfilename = "log" + self.model_type + str(datetime.now().strftime("%d-%m-%Y_%H_%M_%S.%f")) + ".csv"
+        self.model.write_model_params(self.logfilename)
         
-    #     '''
-    #     all_individuals = [ x[1] for x in population ]
-    #     with open(self.logfilename, 'a', newline='') as csv_file:
-    #         csv_writer = csv.writer(csv_file)
-    #         csv_writer.writerow([gen]+[ave]+[max] + all_individuals)
+
+    def write_file(self, gen, ave, max, population) -> None:
+        '''
+        Appends a row consisting fitness data (gen#, average of gen, best of gen, fitness of all individuals).
+        '''
+        all_individuals = [ x[1] for x in population ]
+        with open(self.logfilename, 'a', newline='') as csv_file:
+            csv_writer = csv.writer(csv_file)
+            csv_writer.writerow([gen]+[ave]+[max] + all_individuals)
 
 
     def parse_yaml(self, file_path: str) -> None:
