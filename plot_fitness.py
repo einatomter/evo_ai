@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import sys
     
-plt.style.use('fivethirtyeight')
+#plt.style.use('fivethirtyeight')
 
 def animate(i):
     data = pd.read_csv(sys.argv[1], header=None, skiprows=1)
@@ -18,8 +18,8 @@ def animate(i):
 
     plt.cla()
 
-    plt.plot(x, y1, lw = 2, label='Average_fitness', color='black')
-    plt.plot(x, y2, lw = 2, label='Max fitness')
+    plt.plot(x, y1, lw = 2, label='Average fitness', color='orange')
+    plt.plot(x, y2, lw = 2, label='Maximum fitness')
 
     # for scatterplot
     # data2_x = data2[:,:1]
@@ -35,18 +35,20 @@ def animate(i):
     #linear regression of average fitness
     theta_ofAll = np.polyfit(x, y1, 1)
     Polynomial = np.polyval(theta_ofAll, x)
-    plt.plot(x, Polynomial, '-', label = 'Polyfit of population', lw = 2, color='green')
+    plt.plot(x, Polynomial, '-', label = 'Trend of average fitness', lw = 2, color='green')
 
     #linear regression of max fitness
     theta_ofBest = np.polyfit(x, y2, 1)
     Polynomial2 = np.polyval(theta_ofBest, x)
-    plt.plot(x, Polynomial2, '-', label = 'Polyfit best genomes', lw = 2, color='red')
+    plt.plot(x, Polynomial2, '-', label = 'Trend of maximum fitness', lw = 2, color='red')
 
-    plt.xlabel("Generations", fontsize = "small")
-    plt.ylabel("Fitness score", fontsize = "small")
+    plt.xlabel("Generations", fontsize = "large")
+    plt.ylabel("Fitness score", fontsize = "large")
     plt.tick_params(axis='both', which='major', labelsize=10)
 
     plt.legend(loc='upper left', fontsize = "small")
+    plt.xlim(xmin=0.0)
+    plt.ylim(ymin=0.0)
     plt.tight_layout()
 
 ani = FuncAnimation(plt.gcf(), animate, interval=1000)
