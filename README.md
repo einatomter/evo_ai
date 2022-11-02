@@ -35,11 +35,17 @@ The final parameter is not required for learning but is however mandatory for ru
 The following commands can be run directly. NOTE: Only run one of them at a time:
 ```
 python main.py ca test config_ca.yaml
-python main.py ca train config_ca.yaml
+python main.py ca learn config_ca.yaml
 
 python main.py ann test config_ann.yaml
-python main.py ann train config_ann.yaml
+python main.py ann learn config_ann.yaml
 ```
+
+Running learn also produces a csv logfile of the program's progress. The data can be viewed in real time or after learning has finished using plot fitness.py
+```
+python plot_fitness.py <path_to_logfile.csv>
+```
+
 
 ## 3. Parameters
 
